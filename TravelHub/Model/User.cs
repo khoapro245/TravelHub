@@ -1,20 +1,46 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace TravelHub.Model
 {
     public class User
     {
         public int UserID { get; set; }
+
+        [Required]
+        [StringLength(50)] // Giới hạn độ dài để tối ưu index tìm kiếm
         public string Username { get; set; } = null!;
+
+        [Required]
+        [EmailAddress]
+        [StringLength(100)]
         public string Email { get; set; } = null!;
+
+        // 🟢 GIẢI PHÁP: Cấp đủ dung lượng để chứa trọn vẹn chuỗi băm BCrypt (60 ký tự)
+        [StringLength(255)]
         public string? PasswordHash { get; set; }
+
+        [StringLength(100)]
         public string? GoogleID { get; set; }
+
+        [StringLength(500)] // URL ảnh có thể rất dài nên để rộng rãi
         public string? AvatarURL { get; set; }
+
+        [StringLength(100)]
         public string? FullName { get; set; }
+
         public DateTime? DateOfBirth { get; set; }
+
+        [StringLength(20)]
         public string? StudentCode { get; set; }
+
+        [StringLength(10)]
         public string? Gender { get; set; }
+
+        [StringLength(255)]
+        public string? RefreshToken { get; set; }
+        public DateTime? RefreshTokenExpiryTime { get; set; }
         public DateTime RegistrationDate { get; set; }
 
         // Quan hệ 1 - 1

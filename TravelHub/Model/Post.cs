@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 namespace TravelHub.Model
 {
@@ -10,6 +10,7 @@ namespace TravelHub.Model
         public string PostType { get; set; } = null!;
         public string Title { get; set; } = null!;
         public string? Content { get; set; }
+        public int LikesCount { get; set; } = 0;
         public DateTime CreationDate { get; set; }
 
         public virtual User User { get; set; } = null!;
