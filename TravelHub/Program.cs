@@ -112,10 +112,32 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    
+    // Fix Swagger UI bug with OpenAPI 3.0.4
+    app.Use(async (context, next) =>
+    {
+        if (context.Request.Path.StartsWithSegments("/swagger") && context.Request.Path.ToString().EndsWith(".json"))
+        {
+            var originalBodyStream = context.Response.Body;
+            using var memoryStream = new MemoryStream();
+            context.Response.Body = memoryStream;
+
+            await next();
+
+            context.Response.Body = originalBodyStream;
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            var json = await new StreamReader(memoryStream).ReadToEndAsync();
+            json = json.Replace("\"openapi\": \"3.0.4\"", "\"openapi\": \"3.0.1\"");
+            await context.Response.WriteAsync(json);
+            return;
+        }
+        await next();
+    });
+
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "TravelHub API v1");
+        options.SwaggerEndpoint("/openapi/v1.json", "TravelHub API v1");
     });
 }
 

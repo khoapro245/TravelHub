@@ -74,13 +74,11 @@ namespace TravelHub.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            // Tìm user theo Username HOẶC Email (bằng cách dùng toán tử ||)
-            var user = await _context.Users.SingleOrDefaultAsync(u =>
-                u.Username == request.Username || u.Email == request.Username);
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == request.Email);
 
             // Nếu không tìm thấy hoặc password sai thì báo lỗi
             if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-                return Unauthorized("Invalid username/email or password.");
+                return Unauthorized("Invalid email or password.");
 
             var response = await GenerateAuthResponseAsync(user);
             return Ok(response);
