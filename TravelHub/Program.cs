@@ -100,6 +100,7 @@ builder.Services.AddSignalR();
 // Đăng ký Services
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddHttpClient();
 
 // Đăng ký DbContext kết nối SQL Server
 builder.Services.AddDbContext<AppDbContext>(options =>

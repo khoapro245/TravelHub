@@ -5,6 +5,14 @@ namespace TravelHub.DTO
         public decimal BudgetVND { get; set; }
         public int Days { get; set; }
         public string? Interests { get; set; } // e.g. "Nature, Food, History"
+        public string? Departure { get; set; }
+        public string? TransportationPreference { get; set; }
+        public string? TravelGroup { get; set; }
+        public string? DestinationType { get; set; }
+        public string? MainTravelGoal { get; set; }
+        public string? PreferredWeather { get; set; }
+        public string? AccommodationType { get; set; }
+        public string? BudgetStyle { get; set; }
     }
 
     public class AiRecommendResponse
