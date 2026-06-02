@@ -84,7 +84,8 @@ namespace TravelHub.Controllers
                     ItineraryID = request.ItineraryID,
                     PostType = request.PostType,
                     Title = request.Title,
-                    Content = request.Content
+                    Content = request.Content,
+                    CreationDate = DateTime.UtcNow
                 };
 
                 _context.Posts.Add(post);
@@ -192,7 +193,8 @@ namespace TravelHub.Controllers
                 {
                     PostID = id,
                     UserID = userId,
-                    Content = request.Content
+                    Content = request.Content,
+                    CommentDate = DateTime.UtcNow
                 };
 
                 _context.Comments.Add(comment);

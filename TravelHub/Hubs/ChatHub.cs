@@ -78,7 +78,8 @@ namespace TravelHub.Hubs
             {
                 ChatID = chat.ChatID,
                 SenderID = senderId,
-                Content = content
+                Content = content,
+                SentDate = DateTime.UtcNow
             };
             _context.Messages.Add(message);
             await _context.SaveChangesAsync();
