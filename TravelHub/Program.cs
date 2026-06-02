@@ -108,6 +108,20 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 var app = builder.Build();
 
+// Tự động Apply Migration khi khởi động (quan trọng cho Render)
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    try 
+    {
+        dbContext.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Migration failed: {ex.Message}");
+    }
+}
+
 // =========================================================================
 // 2. CẤU HÌNH ĐƯỜNG ĐI REQUEST (MIDDLEWARE PIPELINE)
 // =========================================================================
