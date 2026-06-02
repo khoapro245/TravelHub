@@ -22,6 +22,17 @@ namespace TravelHub.DTO
         public string CityProvince { get; set; } = string.Empty;
         public string MatchReason { get; set; } = string.Empty;
         public decimal EstimatedCostVND { get; set; }
+        public DailyCostBreakdown DailyCostBreakdown { get; set; } = new DailyCostBreakdown();
+    }
+
+    public class DailyCostBreakdown
+    {
+        public string Accommodation { get; set; } = string.Empty;
+        public string Food { get; set; } = string.Empty;
+        public string Transportation { get; set; } = string.Empty;
+        public string Activities { get; set; } = string.Empty;
+        public string Entertainment { get; set; } = string.Empty;
+        public string Shopping { get; set; } = string.Empty;
     }
 
     public class AiGenerateItineraryRequest

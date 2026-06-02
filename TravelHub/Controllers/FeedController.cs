@@ -38,6 +38,9 @@ namespace TravelHub.Controllers
 
             var totalCount = await query.CountAsync();
 
+            int userId;
+            try { userId = GetCurrentUserId(); } catch { userId = 0; }
+
             var posts = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -46,11 +49,13 @@ namespace TravelHub.Controllers
                     PostID = p.PostID,
                     UserID = p.UserID,
                     Username = p.User.Username,
+                    AvatarURL = p.User.AvatarURL,
                     ItineraryID = p.ItineraryID,
                     PostType = p.PostType,
                     Title = p.Title,
                     Content = p.Content,
                     LikesCount = p.LikesCount,
+                    IsLikedByCurrentUser = userId > 0 && _context.PostLikes.Any(pl => pl.PostID == p.PostID && pl.UserID == userId),
                     CreationDate = p.CreationDate
                 })
                 .ToListAsync();
@@ -98,21 +103,37 @@ namespace TravelHub.Controllers
         {
             try
             {
-                // In a real application, you would have a PostLike table (UserID, PostID) 
-                // to ensure a user only likes a post once. 
-                // For this implementation based on the spec, we'll just increment/toggle the counter.
-                // We will just increment it to simulate a like.
-
+                int userId = GetCurrentUserId();
+                
                 var post = await _context.Posts.FindAsync(id);
                 if (post == null)
                     return NotFound("Post not found.");
 
-                // Simulating a like
-                post.LikesCount++;
+                var existingLike = await _context.PostLikes
+                    .FirstOrDefaultAsync(pl => pl.PostID == id && pl.UserID == userId);
+
+                if (existingLike != null)
+                {
+                    // Unlike
+                    _context.PostLikes.Remove(existingLike);
+                    if (post.LikesCount > 0) post.LikesCount--;
+                }
+                else
+                {
+                    // Like
+                    var newLike = new PostLike
+                    {
+                        PostID = id,
+                        UserID = userId,
+                        LikedDate = DateTime.UtcNow
+                    };
+                    _context.PostLikes.Add(newLike);
+                    post.LikesCount++;
+                }
                 
                 await _context.SaveChangesAsync();
 
-                return Ok(new { Message = "Post liked.", LikesCount = post.LikesCount });
+                return Ok(new { Message = existingLike != null ? "Post unliked." : "Post liked.", LikesCount = post.LikesCount });
             }
             catch (Exception ex)
             {
@@ -139,6 +160,7 @@ namespace TravelHub.Controllers
                     PostID = c.PostID,
                     UserID = c.UserID,
                     Username = c.User.Username,
+                    AvatarURL = c.User.AvatarURL,
                     Content = c.Content,
                     CommentDate = c.CommentDate
                 })

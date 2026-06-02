@@ -47,7 +47,9 @@ namespace TravelHub.Controllers
                         IsGroupChat = c.IsGroupChat,
                         LastMessage = c.Messages.OrderByDescending(m => m.SentDate).Select(m => m.Content).FirstOrDefault(),
                         LastMessageDate = c.Messages.OrderByDescending(m => m.SentDate).Select(m => (DateTime?)m.SentDate).FirstOrDefault(),
-                        ParticipantCount = c.ChatParticipants.Count
+                        ParticipantCount = c.ChatParticipants.Count,
+                        OtherUserID = !c.IsGroupChat ? (int?)c.ChatParticipants.Where(cp => cp.UserID != userId).Select(cp => cp.UserID).FirstOrDefault() : null,
+                        AvatarURL = !c.IsGroupChat ? c.ChatParticipants.Where(cp => cp.UserID != userId).Select(cp => cp.User.AvatarURL).FirstOrDefault() : null
                     })
                     .OrderByDescending(c => c.LastMessageDate)
                     .ToListAsync();
@@ -90,6 +92,7 @@ namespace TravelHub.Controllers
                         ChatID = m.ChatID,
                         SenderID = m.SenderID,
                         SenderUsername = m.Sender.Username,
+                        AvatarURL = m.Sender.AvatarURL,
                         Content = m.Content,
                         SentDate = m.SentDate
                     })
@@ -107,6 +110,50 @@ namespace TravelHub.Controllers
                 };
 
                 return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
+        }
+
+        [HttpPost("messages/send")]
+        public async Task<IActionResult> SendMessage([FromBody] SendMessageDto request)
+        {
+            try
+            {
+                int senderId = GetCurrentUserId();
+
+                // Find an existing 1-on-1 chat between sender and receiver
+                var chat = await _context.Chats
+                    .Where(c => !c.IsGroupChat && 
+                                c.ChatParticipants.Any(cp => cp.UserID == senderId) && 
+                                c.ChatParticipants.Any(cp => cp.UserID == request.ReceiverID))
+                    .FirstOrDefaultAsync();
+
+                // If no chat exists, create a new one
+                if (chat == null)
+                {
+                    chat = new Chat { IsGroupChat = false };
+                    _context.Chats.Add(chat);
+                    await _context.SaveChangesAsync(); // Get ChatID
+
+                    _context.ChatParticipants.Add(new ChatParticipant { ChatID = chat.ChatID, UserID = senderId });
+                    _context.ChatParticipants.Add(new ChatParticipant { ChatID = chat.ChatID, UserID = request.ReceiverID });
+                    await _context.SaveChangesAsync();
+                }
+
+                // Save the message
+                var message = new Message
+                {
+                    ChatID = chat.ChatID,
+                    SenderID = senderId,
+                    Content = request.Content
+                };
+                _context.Messages.Add(message);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Message = "Message sent successfully.", MessageID = message.MessageID });
             }
             catch (UnauthorizedAccessException ex)
             {

@@ -8,11 +8,13 @@ namespace TravelHub.DTO
         public int PostID { get; set; }
         public int UserID { get; set; }
         public string Username { get; set; } = string.Empty;
+        public string? AvatarURL { get; set; }
         public int? ItineraryID { get; set; }
         public string PostType { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string? Content { get; set; }
         public int LikesCount { get; set; }
+        public bool IsLikedByCurrentUser { get; set; }
         public DateTime CreationDate { get; set; }
     }
 
@@ -30,6 +32,7 @@ namespace TravelHub.DTO
         public int PostID { get; set; }
         public int UserID { get; set; }
         public string Username { get; set; } = string.Empty;
+        public string? AvatarURL { get; set; }
         public string? Content { get; set; }
         public DateTime CommentDate { get; set; }
     }

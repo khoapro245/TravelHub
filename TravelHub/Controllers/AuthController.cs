@@ -74,6 +74,35 @@ namespace TravelHub.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
+            var adminEmail = _configuration["AdminAccount:Email"];
+            var adminPassword = _configuration["AdminAccount:Password"];
+
+            if (!string.IsNullOrEmpty(adminEmail) && request.Email == adminEmail)
+            {
+                if (request.Password != adminPassword)
+                    return Unauthorized("Invalid email or password.");
+                
+                // Ensure admin exists in DB so refresh token works
+                var adminUser = await _context.Users.SingleOrDefaultAsync(u => u.Email == adminEmail);
+                if (adminUser == null)
+                {
+                    adminUser = new User
+                    {
+                        Username = "Admin",
+                        Email = adminEmail,
+                        FullName = "System Administrator",
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword),
+                        RegistrationDate = DateTime.UtcNow
+                    };
+                    _context.Users.Add(adminUser);
+                    await _context.SaveChangesAsync();
+                }
+
+                var adminResponse = await GenerateAuthResponseAsync(adminUser);
+                adminResponse.Role = "Admin";
+                return Ok(adminResponse);
+            }
+
             var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == request.Email);
 
             // Nếu không tìm thấy hoặc password sai thì báo lỗi
@@ -81,6 +110,7 @@ namespace TravelHub.Controllers
                 return Unauthorized("Invalid email or password.");
 
             var response = await GenerateAuthResponseAsync(user);
+            response.Role = "User";
             return Ok(response);
         }
 
@@ -101,6 +131,10 @@ namespace TravelHub.Controllers
                 return BadRequest("Invalid refresh token.");
 
             var response = await GenerateAuthResponseAsync(user);
+            
+            var adminEmail = _configuration["AdminAccount:Email"];
+            response.Role = (user.Email == adminEmail) ? "Admin" : "User";
+            
             return Ok(response);
         }
 
@@ -169,6 +203,10 @@ namespace TravelHub.Controllers
                 }
 
                 var response = await GenerateAuthResponseAsync(user);
+                
+                var adminEmail = _configuration["AdminAccount:Email"];
+                response.Role = (user.Email == adminEmail) ? "Admin" : "User";
+                
                 return Ok(response);
             }
             catch (InvalidJwtException)

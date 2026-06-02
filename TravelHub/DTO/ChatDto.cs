@@ -10,6 +10,8 @@ namespace TravelHub.DTO
         public string? LastMessage { get; set; }
         public DateTime? LastMessageDate { get; set; }
         public int ParticipantCount { get; set; }
+        public int? OtherUserID { get; set; }
+        public string? AvatarURL { get; set; }
     }
 
     public class MessageDto
@@ -18,6 +20,7 @@ namespace TravelHub.DTO
         public int ChatID { get; set; }
         public int SenderID { get; set; }
         public string SenderUsername { get; set; } = string.Empty;
+        public string? AvatarURL { get; set; }
         public string? Content { get; set; }
         public DateTime SentDate { get; set; }
     }

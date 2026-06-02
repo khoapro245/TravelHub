@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace TravelHub.Model
 {
@@ -18,6 +18,7 @@ namespace TravelHub.Model
         public DbSet<ChatParticipant> ChatParticipants { get; set; } = null!;
         public DbSet<Message> Messages { get; set; } = null!;
         public DbSet<TravelCompanion> TravelCompanions { get; set; } = null!;
+        public DbSet<PostLike> PostLikes { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -81,6 +82,14 @@ namespace TravelHub.Model
                 entity.Property(e => e.CreationDate).HasDefaultValueSql("GETDATE()");
                 entity.HasOne(d => d.Itinerary).WithMany(p => p.Posts).HasForeignKey(d => d.ItineraryID).OnDelete(DeleteBehavior.Restrict);
                 entity.HasOne(d => d.User).WithMany(p => p.Posts).HasForeignKey(d => d.UserID);
+            });
+
+            // 7.5 PostLikes
+            modelBuilder.Entity<PostLike>(entity =>
+            {
+                entity.HasKey(e => new { e.UserID, e.PostID });
+                entity.HasOne(d => d.User).WithMany().HasForeignKey(d => d.UserID).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(d => d.Post).WithMany().HasForeignKey(d => d.PostID).OnDelete(DeleteBehavior.Cascade);
             });
 
             // 8. Comments
