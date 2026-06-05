@@ -37,6 +37,7 @@ You are an expert travel assistant. Based on the following user preferences, rec
 - Days: {request.Days}
 - Interests: {request.Interests}
 - Departure from: {request.Departure}
+- Destination to: {request.Destination}
 - Transportation: {request.TransportationPreference}
 - Travel Group: {request.TravelGroup}
 - Destination Type: {request.DestinationType}
@@ -46,6 +47,7 @@ You are an expert travel assistant. Based on the following user preferences, rec
 - Budget Style: {request.BudgetStyle}
 
 For each destination, provide the Name, CityProvince (or Country), a MatchReason explaining why it's a good fit based on ALL their specific preferences, and an EstimatedCostVND (total estimated cost for {request.Days} days).
+Also provide a `distance` field which is the estimated distance (e.g. ""1200 km"") from {request.Departure} to the recommended destination.
 Also provide a `dailyCostBreakdown` object containing estimated daily cost ranges in VND (as strings, e.g., ""300.000đ - 500.000đ"") for the following categories: accommodation, food, transportation, activities, entertainment, shopping.
 
 Return the response exactly as a JSON array matching this structure, without any markdown formatting or extra text:
@@ -54,6 +56,7 @@ Return the response exactly as a JSON array matching this structure, without any
     ""name"": ""Destination Name"",
     ""cityProvince"": ""City/Country Name"",
     ""matchReason"": ""Detailed reason here..."",
+    ""distance"": ""1200 km"",
     ""estimatedCostVND"": 1000000,
     ""dailyCostBreakdown"": {{
       ""accommodation"": ""300.000đ - 500.000đ"",

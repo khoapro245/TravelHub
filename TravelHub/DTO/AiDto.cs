@@ -6,6 +6,7 @@ namespace TravelHub.DTO
         public int Days { get; set; }
         public string? Interests { get; set; } // e.g. "Nature, Food, History"
         public string? Departure { get; set; }
+        public string? Destination { get; set; }
         public string? TransportationPreference { get; set; }
         public string? TravelGroup { get; set; }
         public string? DestinationType { get; set; }
@@ -21,6 +22,7 @@ namespace TravelHub.DTO
         public string Name { get; set; } = string.Empty;
         public string CityProvince { get; set; } = string.Empty;
         public string MatchReason { get; set; } = string.Empty;
+        public string Distance { get; set; } = string.Empty;
         public decimal EstimatedCostVND { get; set; }
         public DailyCostBreakdown DailyCostBreakdown { get; set; } = new DailyCostBreakdown();
     }

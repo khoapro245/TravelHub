@@ -115,6 +115,23 @@ using (var scope = app.Services.CreateScope())
     try 
     {
         dbContext.Database.Migrate();
+
+        // Tự động Seed Tours nếu Database trống
+        if (!dbContext.Tours.Any())
+        {
+            var seedTours = new List<Tour>
+            {
+                new Tour { Title = "Tour Trung Quốc 5N5Đ: HCM - Thượng Hải - Vô Tích", Destination = "Trung Quốc", DepartureLocation = "Hồ Chí Minh", DepartureDate = DateTime.Now.AddDays(5), DurationDays = 5, PriceVND = 16990000, ImageUrl = "https://images.unsplash.com/photo-1508804185872-d7bad890e092?w=800", Description = "Khám phá vẻ đẹp Trung Quốc", NumberOfBookings = 136 },
+                new Tour { Title = "Tour Nhật Bản 5N4Đ: Tokyo - Phú Sĩ", Destination = "Nhật Bản", DepartureLocation = "Hà Nội", DepartureDate = DateTime.Now.AddDays(7), DurationDays = 5, PriceVND = 24990000, ImageUrl = "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800", Description = "Ngắm hoa anh đào rực rỡ", NumberOfBookings = 41 },
+                new Tour { Title = "Tour Đà Nẵng 3N2Đ: Bà Nà Hills - Hội An", Destination = "Đà Nẵng", DepartureLocation = "Hồ Chí Minh", DepartureDate = DateTime.Now.AddDays(2), DurationDays = 3, PriceVND = 3500000, ImageUrl = "https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=800", Description = "Du lịch miền Trung trọn gói", NumberOfBookings = 32 },
+                new Tour { Title = "Tour Thái Lan 4N3Đ: Bangkok - Pattaya", Destination = "Thái Lan", DepartureLocation = "Hồ Chí Minh", DepartureDate = DateTime.Now.AddDays(10), DurationDays = 4, PriceVND = 5990000, ImageUrl = "https://images.unsplash.com/photo-1506665531195-3566af2b4dfa?w=800", Description = "Thiên đường mua sắm", NumberOfBookings = 24 },
+                new Tour { Title = "Tour Singapore 3N2Đ: Marina Bay Sands", Destination = "Singapore", DepartureLocation = "Hà Nội", DepartureDate = DateTime.Now.AddDays(15), DurationDays = 3, PriceVND = 8500000, ImageUrl = "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=800", Description = "Đảo quốc sư tử", NumberOfBookings = 38 },
+                new Tour { Title = "Tour Châu Âu 9N8Đ: Pháp - Thụy Sĩ - Ý", Destination = "Châu Âu", DepartureLocation = "Hồ Chí Minh", DepartureDate = DateTime.Now.AddDays(20), DurationDays = 9, PriceVND = 55990000, ImageUrl = "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=800", Description = "Hành trình khám phá Châu Âu cổ kính", NumberOfBookings = 21 }
+            };
+            dbContext.Tours.AddRange(seedTours);
+            dbContext.SaveChanges();
+            Console.WriteLine("Successfully seeded initial tours.");
+        }
     }
     catch (Exception ex)
     {

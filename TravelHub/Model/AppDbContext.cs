@@ -19,6 +19,8 @@ namespace TravelHub.Model
         public DbSet<Message> Messages { get; set; } = null!;
         public DbSet<TravelCompanion> TravelCompanions { get; set; } = null!;
         public DbSet<PostLike> PostLikes { get; set; } = null!;
+        public DbSet<Tour> Tours { get; set; } = null!;
+        public DbSet<TourBooking> TourBookings { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -138,6 +140,21 @@ namespace TravelHub.Model
                 // Cấu hình rõ ràng hai khóa ngoại trỏ chung về bảng Users
                 entity.HasOne(d => d.Requester).WithMany(p => p.SentRequests).HasForeignKey(d => d.RequesterID).OnDelete(DeleteBehavior.Restrict);
                 entity.HasOne(d => d.Receiver).WithMany(p => p.ReceivedRequests).HasForeignKey(d => d.ReceiverID).OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // 13. Tours
+            modelBuilder.Entity<Tour>(entity =>
+            {
+                entity.HasKey(e => e.TourID);
+                entity.Property(e => e.PriceVND).HasColumnType("decimal(18, 2)");
+            });
+
+            // 14. TourBookings
+            modelBuilder.Entity<TourBooking>(entity =>
+            {
+                entity.HasKey(e => e.BookingID);
+                entity.Property(e => e.BookingDate).HasDefaultValueSql("GETDATE()");
+                entity.HasOne(d => d.User).WithMany().HasForeignKey(d => d.UserID);
             });
         }
     }
