@@ -10,18 +10,20 @@ namespace TravelHub.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    // [Authorize]
     public class AiController : ControllerBase
     {
         private readonly AppDbContext _context;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<AiController> _logger;
 
-        public AiController(AppDbContext context, IHttpClientFactory httpClientFactory, IConfiguration configuration)
+        public AiController(AppDbContext context, IHttpClientFactory httpClientFactory, IConfiguration configuration, ILogger<AiController> logger)
         {
             _context = context;
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
+            _logger = logger;
         }
 
         [HttpPost("recommend")]
@@ -76,7 +78,8 @@ Return the response exactly as a JSON array matching this structure, without any
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Gemini API call failed: {ex.Message}");
+                _logger.LogError(ex, "Gemini API call failed");
+                return StatusCode(500, "Unable to process AI response.");
             }
 
             try
@@ -110,7 +113,8 @@ Return the response exactly as a JSON array matching this structure, without any
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Error parsing AI response: {ex.Message}. Response was: {resultStr}");
+                _logger.LogError(ex, "Error parsing AI response. Response was: {ResultStr}", resultStr);
+                return StatusCode(500, "Unable to process AI response.");
             }
         }
 
@@ -155,7 +159,8 @@ Make sure to generate exactly {request.Days} days.";
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Gemini API call failed: {ex.Message}");
+                _logger.LogError(ex, "Gemini API call failed for itinerary generation");
+                return StatusCode(500, "Unable to process AI response.");
             }
 
             try
@@ -165,7 +170,8 @@ Make sure to generate exactly {request.Days} days.";
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Error parsing AI response: {ex.Message}. Response was: {resultStr}");
+                _logger.LogError(ex, "Error parsing AI itinerary response. Response was: {ResultStr}", resultStr);
+                return StatusCode(500, "Unable to process AI response.");
             }
         }
 
@@ -214,6 +220,25 @@ Make sure to generate exactly {request.Days} days.";
                     .GetProperty("text")
                     .GetString();
                     
+                if (text != null)
+                {
+                    text = text.Trim();
+                    if (text.StartsWith("```json", StringComparison.OrdinalIgnoreCase))
+                    {
+                        text = text.Substring(7);
+                    }
+                    else if (text.StartsWith("```", StringComparison.OrdinalIgnoreCase))
+                    {
+                        text = text.Substring(3);
+                    }
+                    
+                    if (text.EndsWith("```"))
+                    {
+                        text = text.Substring(0, text.Length - 3);
+                    }
+                    text = text.Trim();
+                }
+
                 return text ?? throw new Exception("Parsed text is null");
             }
             catch (Exception ex)

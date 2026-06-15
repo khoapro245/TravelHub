@@ -36,6 +36,7 @@ namespace TravelHub.Controllers
             {
                 int userId = GetCurrentUserId();
                 var itineraries = await _context.Itineraries
+                    .Include(i => i.ItineraryDetails)
                     .Where(i => i.UserID == userId)
                     .Select(i => new ItineraryDto
                     {
@@ -45,7 +46,11 @@ namespace TravelHub.Controllers
                         StartDate = i.StartDate,
                         EndDate = i.EndDate,
                         TotalBudgetEstimatedVND = i.TotalBudgetEstimatedVND,
-                        Status = i.Status
+                        Status = i.Status,
+                        Details = i.ItineraryDetails.Select(d => new ItineraryDetailDto 
+                        {
+                            DestinationID = d.DestinationID
+                        }).ToList()
                     })
                     .ToListAsync();
 

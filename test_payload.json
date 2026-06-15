@@ -1,0 +1,14 @@
+{
+  "budgetVND": 5000000,
+  "days": 3,
+  "interests": "beach",
+  "departure": "TP. Hồ Chí Minh",
+  "destination": "",
+  "transportationPreference": "airplane",
+  "travelGroup": "solo",
+  "destinationType": "beach",
+  "mainTravelGoal": "relaxation",
+  "preferredWeather": "sunny",
+  "accommodationType": "hotel",
+  "budgetStyle": "balanced"
+}

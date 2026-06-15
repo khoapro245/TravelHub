@@ -1,0 +1,47 @@
+[
+  {
+    "name": "Da Lat",
+    "cityProvince": "Lâm Đồng, Vietnam",
+    "matchReason": "Da Lat is an ideal match for your preferences, offering a refreshing escape with its consistently cool weather year-round, perfectly suiting your 'preferred weather' criterion. It provides a unique blend of French colonial charm, vibrant flower gardens, and cultural sites like the Linh Phuoc Pagoda and Bao Dai Summer Palace, fulfilling your 'culture' interest in a 'city' setting. The relaxed pace and picturesque landscapes are excellent for 'relaxation' with 'friends'. Direct flights from TP. Hồ Chí Minh are frequent and affordable, making the '5,000,000 VND' budget for '3 days' achievable for a 'balanced' style with 'hotel' accommodation.",
+    "distance": "220 km",
+    "estimatedCostVND": 4500000,
+    "dailyCostBreakdown": {
+      "accommodation": "350.000đ - 600.000đ",
+      "food": "250.000đ - 450.000đ",
+      "transportation": "50.000đ - 150.000đ",
+      "activities": "150.000đ - 300.000đ",
+      "entertainment": "50.000đ - 150.000đ",
+      "shopping": "50.000đ - 200.000đ"
+    }
+  },
+  {
+    "name": "Hue",
+    "cityProvince": "Thừa Thiên Huế, Vietnam",
+    "matchReason": "Hue offers a deep dive into Vietnamese history and culture, aligning perfectly with your 'culture' interest. As the former imperial capital, its iconic Imperial City, royal tombs, and ancient pagodas provide abundant cultural exploration in a tranquil 'city' environment. The city's serene atmosphere along the Perfume River makes it excellent for 'relaxation' with 'friends'. To meet your 'cool weather' preference, plan your trip between October and March when temperatures are pleasantly cool. Direct 'airplane' travel from TP. Hồ Chí Minh combined with very affordable local costs ensures this destination fits comfortably within your '5,000,000 VND' 'balanced budget' for '3 days' with 'hotel' stays.",
+    "distance": "680 km",
+    "estimatedCostVND": 4700000,
+    "dailyCostBreakdown": {
+      "accommodation": "300.000đ - 550.000đ",
+      "food": "200.000đ - 400.000đ",
+      "transportation": "50.000đ - 120.000đ",
+      "activities": "200.000đ - 400.000đ",
+      "entertainment": "50.000đ - 100.000đ",
+      "shopping": "50.000đ - 150.000đ"
+    }
+  },
+  {
+    "name": "Hanoi",
+    "cityProvince": "Hanoi, Vietnam",
+    "matchReason": "Hanoi, Vietnam's capital, is a vibrant 'city' rich in 'culture', offering a compelling experience for 'friends'. Its ancient Old Quarter, historical landmarks like the Temple of Literature, numerous museums, and bustling street life provide extensive cultural immersion. For 'cool weather', visiting between November and March is ideal, when the city enjoys crisp, cooler temperatures. While a busy metropolis, Hanoi still allows for moments of 'relaxation' by exploring its charming lakes and cafes. 'Airplane' travel from TP. Hồ Chí Minh is readily available, and with a 'balanced budget' approach to 'hotel' accommodation and local dining, the '5,000,000 VND' for '3 days' is manageable.",
+    "distance": "1150 km",
+    "estimatedCostVND": 4850000,
+    "dailyCostBreakdown": {
+      "accommodation": "400.000đ - 700.000đ",
+      "food": "250.000đ - 500.000đ",
+      "transportation": "70.000đ - 150.000đ",
+      "activities": "150.000đ - 300.000đ",
+      "entertainment": "50.000đ - 150.000đ",
+      "shopping": "100.000đ - 250.000đ"
+    }
+  }
+]

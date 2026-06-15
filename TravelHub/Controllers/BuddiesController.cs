@@ -106,6 +106,7 @@ namespace TravelHub.Controllers
             {
                 int userId = GetCurrentUserId();
                 var companion = await _context.TravelCompanions
+                    .Include(tc => tc.Post)
                     .FirstOrDefaultAsync(tc => tc.CompanionID == id && tc.ReceiverID == userId);
 
                 if (companion == null)
@@ -115,9 +116,69 @@ namespace TravelHub.Controllers
                     return BadRequest("Invalid status. Must be 'Accepted' or 'Declined'.");
 
                 companion.Status = request.Status;
+
+                if (request.Status == "Accepted" && companion.Post != null)
+                {
+                    string groupName = $"Chuyến đi: {companion.Post.Title}";
+                    
+                    var existingGroup = await _context.Chats
+                        .Include(c => c.ChatParticipants)
+                        .FirstOrDefaultAsync(c => c.IsGroupChat && c.ChatName == groupName && c.ChatParticipants.Any(cp => cp.UserID == userId));
+
+                    if (existingGroup == null)
+                    {
+                        existingGroup = new Chat
+                        {
+                            ChatName = groupName,
+                            IsGroupChat = true
+                        };
+                        _context.Chats.Add(existingGroup);
+                        await _context.SaveChangesAsync();
+
+                        _context.ChatParticipants.Add(new ChatParticipant { ChatID = existingGroup.ChatID, UserID = userId });
+                        _context.ChatParticipants.Add(new ChatParticipant { ChatID = existingGroup.ChatID, UserID = companion.RequesterID });
+                    }
+                    else
+                    {
+                        if (!existingGroup.ChatParticipants.Any(cp => cp.UserID == companion.RequesterID))
+                        {
+                            _context.ChatParticipants.Add(new ChatParticipant { ChatID = existingGroup.ChatID, UserID = companion.RequesterID });
+                        }
+                    }
+                }
+
                 await _context.SaveChangesAsync();
 
                 return Ok(new { Message = $"Request {request.Status.ToLower()}." });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
+        }
+
+        [HttpGet("requests/pending")]
+        public async Task<IActionResult> GetPendingRequests()
+        {
+            try
+            {
+                int userId = GetCurrentUserId();
+
+                var requests = await _context.TravelCompanions
+                    .Include(tc => tc.Requester)
+                    .Where(tc => tc.ReceiverID == userId && tc.Status == "Pending")
+                    .Select(tc => new BuddyDto
+                    {
+                        CompanionID = tc.CompanionID,
+                        BuddyUserID = tc.RequesterID,
+                        BuddyUsername = tc.Requester.Username,
+                        AvatarURL = tc.Requester.AvatarURL,
+                        ConnectedDate = tc.DateRequested
+                    })
+                    .OrderByDescending(r => r.ConnectedDate)
+                    .ToListAsync();
+
+                return Ok(requests);
             }
             catch (UnauthorizedAccessException ex)
             {

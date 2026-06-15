@@ -27,7 +27,19 @@ namespace TravelHub.DTO
 
     public class SendMessageDto
     {
-        public int ReceiverID { get; set; }
+        public int? ChatID { get; set; } // Add ChatID for group chats or existing chats
+        public int? ReceiverID { get; set; } // Required if ChatID is null (for 1-1 chat creation)
         public string Content { get; set; } = string.Empty;
+    }
+
+    public class CreateGroupChatDto
+    {
+        public string ChatName { get; set; } = string.Empty;
+        public List<int> ParticipantUserIDs { get; set; } = new List<int>();
+    }
+
+    public class AddParticipantDto
+    {
+        public int UserID { get; set; }
     }
 }

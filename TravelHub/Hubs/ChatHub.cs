@@ -47,30 +47,47 @@ namespace TravelHub.Hubs
             }
         }
 
-        // Client calls: SendMessage(receiverId, message) - Note: The spec says receiverId, but usually it's conversationId. 
-        // We will implement logic to find or create the 1-on-1 chat if passing receiverId, or send to conversation if it's conversationId.
-        // Let's implement based on receiverId as per spec.
-        public async Task SendMessage(int receiverId, string content)
+        // Client calls: SendMessage(receiverId, chatId, message)
+        public async Task SendMessage(int? receiverId, int? chatId, string content)
         {
             int senderId = GetCurrentUserId();
+            Chat chat = null;
 
-            // Find an existing 1-on-1 chat between sender and receiver
-            var chat = await _context.Chats
-                .Where(c => !c.IsGroupChat && 
-                            c.ChatParticipants.Any(cp => cp.UserID == senderId) && 
-                            c.ChatParticipants.Any(cp => cp.UserID == receiverId))
-                .FirstOrDefaultAsync();
-
-            // If no chat exists, create a new one
-            if (chat == null)
+            if (chatId.HasValue)
             {
-                chat = new Chat { IsGroupChat = false };
-                _context.Chats.Add(chat);
-                await _context.SaveChangesAsync(); // Get ChatID
+                chat = await _context.Chats
+                    .Include(c => c.ChatParticipants)
+                    .FirstOrDefaultAsync(c => c.ChatID == chatId.Value);
 
-                _context.ChatParticipants.Add(new ChatParticipant { ChatID = chat.ChatID, UserID = senderId });
-                _context.ChatParticipants.Add(new ChatParticipant { ChatID = chat.ChatID, UserID = receiverId });
-                await _context.SaveChangesAsync();
+                if (chat == null || !chat.ChatParticipants.Any(cp => cp.UserID == senderId))
+                {
+                    throw new HubException("Chat not found or access denied.");
+                }
+            }
+            else if (receiverId.HasValue)
+            {
+                // Find an existing 1-on-1 chat between sender and receiver
+                chat = await _context.Chats
+                    .Where(c => !c.IsGroupChat && 
+                                c.ChatParticipants.Any(cp => cp.UserID == senderId) && 
+                                c.ChatParticipants.Any(cp => cp.UserID == receiverId.Value))
+                    .FirstOrDefaultAsync();
+
+                // If no chat exists, create a new one
+                if (chat == null)
+                {
+                    chat = new Chat { IsGroupChat = false };
+                    _context.Chats.Add(chat);
+                    await _context.SaveChangesAsync(); // Get ChatID
+
+                    _context.ChatParticipants.Add(new ChatParticipant { ChatID = chat.ChatID, UserID = senderId });
+                    _context.ChatParticipants.Add(new ChatParticipant { ChatID = chat.ChatID, UserID = receiverId.Value });
+                    await _context.SaveChangesAsync();
+                }
+            }
+            else
+            {
+                throw new HubException("Must provide either receiverId or chatId.");
             }
 
             // Save the message
@@ -100,9 +117,12 @@ namespace TravelHub.Hubs
             // Broadcast to the group (conversation ID)
             await Clients.Group(chat.ChatID.ToString()).SendAsync("ReceiveMessage", messageDto);
             
-            // Also explicitly send to the receiver if they are connected (useful if they haven't joined the specific group yet)
-            // SignalR allows sending to specific users via UserIdentifier
-            await Clients.User(receiverId.ToString()).SendAsync("ReceiveMessage", messageDto);
+            // Send explicitly to users in case they haven't joined the SignalR group yet
+            var participantsToNotify = chat.ChatParticipants.Where(p => p.UserID != senderId).ToList();
+            foreach (var participant in participantsToNotify)
+            {
+                await Clients.User(participant.UserID.ToString()).SendAsync("ReceiveMessage", messageDto);
+            }
             
             // Send to the sender as well to confirm
             await Clients.Caller.SendAsync("ReceiveMessage", messageDto);
