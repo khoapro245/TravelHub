@@ -37,12 +37,15 @@ namespace TravelHub.Controllers
             int userId = userIdOpt.Value;
 
             var user = await _context.Users
-                .AsNoTracking()
                 .Include(u => u.UserPreference)
                 .FirstOrDefaultAsync(u => u.UserID == userId);
 
             if (user == null)
                 return NotFound("User not found.");
+
+            // Update LastOnline
+            user.LastOnline = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
 
             var profile = new UserProfileDto
             {

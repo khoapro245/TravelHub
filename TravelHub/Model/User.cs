@@ -42,7 +42,7 @@ namespace TravelHub.Model
         public string? RefreshToken { get; set; }
         public DateTime? RefreshTokenExpiryTime { get; set; }
         public DateTime RegistrationDate { get; set; }
-
+        public DateTime? LastOnline { get; set; }
         // Quan hệ 1 - 1
         public virtual UserPreference? UserPreference { get; set; }
 

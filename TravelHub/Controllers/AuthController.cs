@@ -35,6 +35,7 @@ namespace TravelHub.Controllers
             
             user.RefreshToken = refreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(refreshTokenExpirationDays);
+            user.LastOnline = DateTime.UtcNow;
             
             await _context.SaveChangesAsync();
 

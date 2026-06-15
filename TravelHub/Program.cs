@@ -116,8 +116,8 @@ using (var scope = app.Services.CreateScope())
     {
         dbContext.Database.Migrate();
 
-        // Tự động Seed Tours nếu Database trống
-        if (!dbContext.Tours.Any())
+        // Tự động Seed Tours nếu Database chưa đủ 6 tours
+        if (dbContext.Tours.Count() < 6)
         {
             var seedTours = new List<Tour>
             {
