@@ -99,6 +99,42 @@ namespace TravelHub.Controllers
             }
         }
 
+        [HttpDelete("posts/{id}")]
+        public async Task<IActionResult> DeletePost(int id)
+        {
+            try
+            {
+                int userId = GetCurrentUserId();
+
+                var post = await _context.Posts.FindAsync(id);
+                if (post == null)
+                    return NotFound("Post not found.");
+
+                // Only the author may delete their own post.
+                if (post.UserID != userId)
+                    return Forbid();
+
+                // Remove dependent records first to avoid FK constraint issues.
+                var likes = _context.PostLikes.Where(pl => pl.PostID == id);
+                _context.PostLikes.RemoveRange(likes);
+
+                var comments = _context.Comments.Where(c => c.PostID == id);
+                _context.Comments.RemoveRange(comments);
+
+                var companions = _context.TravelCompanions.Where(tc => tc.PostID == id);
+                _context.TravelCompanions.RemoveRange(companions);
+
+                _context.Posts.Remove(post);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Message = "Post deleted successfully.", PostID = id });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
+        }
+
         [HttpPost("posts/{id}/like")]
         public async Task<IActionResult> ToggleLike(int id)
         {
