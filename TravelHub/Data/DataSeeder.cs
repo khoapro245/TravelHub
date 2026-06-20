@@ -23,6 +23,18 @@ namespace TravelHub.Data
 
             var destinations = JsonSerializer.Deserialize<List<Destination>>(jsonData, options);
 
+            // Xóa dữ liệu lỗi do string replace sai từ các lần chạy trước
+            var corruptedDestinations = await context.Destinations
+                .Where(d => d.CityProvince.Contains("000") || d.Name.Contains("000") || d.Description.Contains("000"))
+                .ToListAsync();
+            
+            if (corruptedDestinations.Any())
+            {
+                context.Destinations.RemoveRange(corruptedDestinations);
+                await context.SaveChangesAsync();
+                Console.WriteLine($"[DataSeeder] Removed {corruptedDestinations.Count} corrupted destinations.");
+            }
+
             if (destinations == null || !destinations.Any())
             {
                 return;
