@@ -32,7 +32,8 @@ namespace TravelHub.Service
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.UserID.ToString()),
                 new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-                new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString())
+                new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
+                new Claim(ClaimTypes.Role, user.Role ?? "Customer")
             };
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

@@ -111,7 +111,7 @@ namespace TravelHub.Controllers
                 return Unauthorized("Invalid email or password.");
 
             var response = await GenerateAuthResponseAsync(user);
-            response.Role = "User";
+            response.Role = user.Role;
             return Ok(response);
         }
 
@@ -133,8 +133,7 @@ namespace TravelHub.Controllers
 
             var response = await GenerateAuthResponseAsync(user);
             
-            var adminEmail = _configuration["AdminAccount:Email"];
-            response.Role = (user.Email == adminEmail) ? "Admin" : "User";
+            response.Role = user.Role;
             
             return Ok(response);
         }
@@ -205,8 +204,7 @@ namespace TravelHub.Controllers
 
                 var response = await GenerateAuthResponseAsync(user);
                 
-                var adminEmail = _configuration["AdminAccount:Email"];
-                response.Role = (user.Email == adminEmail) ? "Admin" : "User";
+                response.Role = user.Role;
                 
                 return Ok(response);
             }

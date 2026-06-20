@@ -21,6 +21,7 @@ namespace TravelHub.Model
         public DbSet<PostLike> PostLikes { get; set; } = null!;
         public DbSet<Tour> Tours { get; set; } = null!;
         public DbSet<TourBooking> TourBookings { get; set; } = null!;
+        public DbSet<TourGuideProfile> TourGuideProfiles { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -31,6 +32,18 @@ namespace TravelHub.Model
                 entity.HasIndex(e => e.Username).IsUnique();
                 entity.HasIndex(e => e.Email).IsUnique();
                 entity.Property(e => e.RegistrationDate).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.Role).HasDefaultValue("Customer");
+            });
+
+            // 1.5 TourGuideProfiles (Quan hệ 1-1 với User)
+            modelBuilder.Entity<TourGuideProfile>(entity =>
+            {
+                entity.HasKey(e => e.ProfileID);
+                entity.HasOne(d => d.User)
+                    .WithOne(p => p.TourGuideProfile)
+                    .HasForeignKey<TourGuideProfile>(d => d.UserID)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
             });
 
             // 2. UserPreferences (Quan hệ 1-1 với User)

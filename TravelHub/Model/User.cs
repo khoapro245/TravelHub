@@ -43,8 +43,13 @@ namespace TravelHub.Model
         public DateTime? RefreshTokenExpiryTime { get; set; }
         public DateTime RegistrationDate { get; set; }
         public DateTime? LastOnline { get; set; }
+        
+        [StringLength(20)]
+        public string Role { get; set; } = "Customer"; // Customer, TourGuide, Admin
+
         // Quan hệ 1 - 1
         public virtual UserPreference? UserPreference { get; set; }
+        public virtual TourGuideProfile? TourGuideProfile { get; set; }
 
         // Quan hệ 1 - Nhiều
         public virtual ICollection<Itinerary> Itineraries { get; set; } = new List<Itinerary>();

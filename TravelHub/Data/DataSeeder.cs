@@ -81,5 +81,43 @@ namespace TravelHub.Data
                 Console.WriteLine("[DataSeeder] No new destinations to seed.");
             }
         }
+        public static async Task SeedDefaultTourGuideAsync(AppDbContext context)
+        {
+            var guideEmail = "guide@travelhub.com";
+            var guidePassword = "Password123!"; // Will be hashed
+
+            if (!await context.Users.AnyAsync(u => u.Email == guideEmail))
+            {
+                var guideUser = new User
+                {
+                    Username = "DefaultGuide",
+                    Email = guideEmail,
+                    FullName = "Nguyễn Hướng Dẫn",
+                    Role = "TourGuide",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(guidePassword),
+                    RegistrationDate = DateTime.UtcNow
+                };
+
+                context.Users.Add(guideUser);
+                await context.SaveChangesAsync(); // To get the UserID
+
+                var guideProfile = new TourGuideProfile
+                {
+                    UserID = guideUser.UserID,
+                    Experience = "3-5",
+                    Languages = "Tiếng Việt, Tiếng Anh",
+                    Locations = "Hà Nội, Sapa, Ninh Bình",
+                    Bio = "Tôi là một hướng dẫn viên đam mê khám phá văn hóa và ẩm thực.",
+                    TourCategories = "Tour Văn Hóa, Tour Ẩm Thực",
+                    IsVerified = "Approved",
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                context.TourGuideProfiles.Add(guideProfile);
+                await context.SaveChangesAsync();
+
+                Console.WriteLine($"[DataSeeder] Seeded default Tour Guide: {guideEmail}");
+            }
+        }
     }
 }

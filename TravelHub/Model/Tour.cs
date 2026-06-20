@@ -37,5 +37,10 @@ namespace TravelHub.Model
         public string? Description { get; set; }
         
         public int NumberOfBookings { get; set; } = 0;
+
+        public int? ProviderID { get; set; }
+
+        [ForeignKey("ProviderID")]
+        public virtual User? Provider { get; set; }
     }
 }

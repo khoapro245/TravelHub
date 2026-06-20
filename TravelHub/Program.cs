@@ -135,6 +135,9 @@ using (var scope = app.Services.CreateScope())
 
         // Tự động Seed Destinations
         await TravelHub.Data.DataSeeder.SeedDestinationsAsync(dbContext, app.Environment.ContentRootPath);
+
+        // Seed default Tour Guide
+        await TravelHub.Data.DataSeeder.SeedDefaultTourGuideAsync(dbContext);
     }
     catch (Exception ex)
     {

@@ -105,5 +105,59 @@ namespace TravelHub.Controllers
             int months = (int)(timeSpan.TotalDays / 30);
             return $"{months} tháng trước";
         }
+
+        [HttpGet("guides/pending")]
+        public async Task<IActionResult> GetPendingGuides()
+        {
+            var guides = await _context.TourGuideProfiles
+                                       .Include(p => p.User)
+                                       .Where(p => p.IsVerified == "Pending")
+                                       .Select(p => new TourGuideProfileDto
+                                       {
+                                           ProfileID = p.ProfileID,
+                                           UserID = p.UserID,
+                                           Username = p.User.Username,
+                                           Email = p.User.Email,
+                                           FullName = p.User.FullName,
+                                           Experience = p.Experience,
+                                           Languages = p.Languages,
+                                           Locations = p.Locations,
+                                           Bio = p.Bio,
+                                           TourCategories = p.TourCategories,
+                                           IdFrontUrl = p.IdFrontUrl,
+                                           IdBackUrl = p.IdBackUrl,
+                                           CertUrl = p.CertUrl,
+                                           GuideAvatarUrl = p.GuideAvatarUrl,
+                                           IsVerified = p.IsVerified,
+                                           CreatedAt = p.CreatedAt
+                                       })
+                                       .ToListAsync();
+            return Ok(guides);
+        }
+
+        [HttpPost("guides/approve")]
+        public async Task<IActionResult> ApproveGuide([FromBody] AdminApproveGuideRequest request)
+        {
+            var profile = await _context.TourGuideProfiles
+                                        .Include(p => p.User)
+                                        .FirstOrDefaultAsync(p => p.ProfileID == request.ProfileID);
+            if (profile == null)
+            {
+                return NotFound(new { message = "Tour guide profile not found." });
+            }
+
+            if (request.Approve)
+            {
+                profile.IsVerified = "Approved";
+                profile.User.Role = "TourGuide"; // Update Role
+            }
+            else
+            {
+                profile.IsVerified = "Rejected";
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = request.Approve ? "Guide approved successfully." : "Guide application rejected." });
+        }
     }
 }
