@@ -66,7 +66,7 @@ namespace TravelHub.Controllers
                 DepartureLocation = "Tự túc",
                 DepartureDate = departureDate ?? DateTime.Now.AddDays(random.Next(1, 10)),
                 DurationDays = 1,
-                PriceVND = d.EstimatedBaseCostVND ?? 500000,
+                PriceVND = d.TotalTourCost ?? 500000,
                 ImageUrl = "https://images.unsplash.com/photo-1599839619722-39751411ea63?w=800",
                 Description = d.Description ?? "Tham quan địa danh nổi tiếng",
                 NumberOfBookings = random.Next(10, 200)
@@ -95,7 +95,7 @@ namespace TravelHub.Controllers
                     DepartureLocation = "Tự túc",
                     DepartureDate = DateTime.Now.AddDays(random.Next(1, 10)),
                     DurationDays = 1,
-                    PriceVND = d.EstimatedBaseCostVND ?? 500000,
+                    PriceVND = d.TotalTourCost ?? 500000,
                     ImageUrl = "https://images.unsplash.com/photo-1599839619722-39751411ea63?w=800",
                     Description = d.Description ?? "Tham quan địa danh nổi tiếng",
                     NumberOfBookings = random.Next(10, 200)

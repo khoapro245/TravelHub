@@ -14,6 +14,8 @@ namespace TravelHub.DTO
         public string? PreferredWeather { get; set; }
         public string? AccommodationType { get; set; }
         public string? BudgetStyle { get; set; }
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
     }
 
     public class AiRecommendResponse
@@ -25,6 +27,14 @@ namespace TravelHub.DTO
         public string Distance { get; set; } = string.Empty;
         public decimal EstimatedCostVND { get; set; }
         public DailyCostBreakdown DailyCostBreakdown { get; set; } = new DailyCostBreakdown();
+    }
+
+    public class PaginatedAiResponse
+    {
+        public List<AiRecommendResponse> Items { get; set; } = new List<AiRecommendResponse>();
+        public int TotalCount { get; set; }
+        public int Page { get; set; }
+        public int TotalPages { get; set; }
     }
 
     public class DailyCostBreakdown

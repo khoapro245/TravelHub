@@ -33,8 +33,88 @@ namespace TravelHub.Controllers
             if (string.IsNullOrEmpty(apiKey))
                 return StatusCode(500, "Gemini API Key is missing.");
 
+            // 1. Quét Database trước
+            var query = _context.Destinations.AsQueryable();
+            
+            // Lấy địa điểm tìm kiếm (từ trường Destination hoặc Departure vì UI gửi qua Departure)
+            var searchLocation = !string.IsNullOrWhiteSpace(request.Destination) ? request.Destination : request.Departure;
+            
+            // Lọc theo CityProvince hoặc Name
+            if (!string.IsNullOrWhiteSpace(searchLocation))
+            {
+                query = query.Where(d => d.CityProvince.Contains(searchLocation) || d.Name.Contains(searchLocation));
+            }
+
+            // Lọc theo ngân sách (nếu user nhập > 0)
+            if (request.BudgetVND > 0)
+            {
+                // Cho phép độ chênh lệch ngân sách khoảng 10%
+                var maxBudget = request.BudgetVND * 1.1m; 
+                query = query.Where(d => d.TotalTourCost <= maxBudget);
+            }
+
+            var dbDestinations = await query.ToListAsync();
+            
+            // Chấm điểm ưu tiên theo KeyMain
+            var scoredDestinations = dbDestinations.Select(d => 
+            {
+                int score = 0;
+                if (!string.IsNullOrWhiteSpace(request.Interests) && !string.IsNullOrWhiteSpace(d.KeyMain))
+                {
+                    // Lọc mảng theo dấu phẩy
+                    var interests = request.Interests.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    foreach (var interest in interests)
+                    {
+                        if (d.KeyMain.Contains(interest, StringComparison.OrdinalIgnoreCase))
+                        {
+                            score += 10;
+                        }
+                    }
+                }
+                return new { Destination = d, Score = score };
+            })
+            // Nếu có Interests, nên ưu tiên những dòng có Score > 0, 
+            // nhưng vì yêu cầu "hiển thị hết ra" nên ta sẽ lấy hết và sort theo Score
+            .OrderByDescending(x => x.Score)
+            .ToList();
+
+            if (scoredDestinations.Any())
+            {
+                int totalCount = scoredDestinations.Count;
+                var pagedItems = scoredDestinations
+                    .Skip((request.Page - 1) * request.PageSize)
+                    .Take(request.PageSize)
+                    .Select(x => new AiRecommendResponse
+                    {
+                        DestinationID = x.Destination.DestinationID,
+                        Name = x.Destination.Name,
+                        CityProvince = x.Destination.CityProvince,
+                        MatchReason = x.Score > 0 ? "Địa điểm lý tưởng cực kỳ phù hợp với sở thích của bạn." : "Một trong những địa điểm tuyệt vời có trong hệ thống.",
+                        Distance = "Tùy vị trí",
+                        EstimatedCostVND = x.Destination.TotalTourCost ?? x.Destination.AccommodationCost ?? 0,
+                        DailyCostBreakdown = new DailyCostBreakdown
+                        {
+                            Accommodation = x.Destination.AccommodationCost?.ToString() ?? "N/A",
+                            Activities = x.Destination.EntranceFee?.ToString() ?? "N/A",
+                            Food = "Tự túc",
+                            Transportation = "Tự túc",
+                            Entertainment = "Tùy chọn",
+                            Shopping = "Tùy chọn"
+                        }
+                    }).ToList();
+
+                return Ok(new PaginatedAiResponse
+                {
+                    Items = pagedItems,
+                    TotalCount = totalCount,
+                    Page = request.Page,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize)
+                });
+            }
+
+            // 2. Nếu Database rỗng (không tìm thấy gì), fallback gọi AI
             var prompt = $@"
-You are an expert travel assistant. Based on the following user preferences, recommend the top 3 best matching destinations anywhere in the world (or specifically matching their criteria):
+You are an expert travel assistant. Based on the following user preferences, recommend the top {request.PageSize} best matching destinations anywhere in the world (or specifically matching their criteria):
 - Budget: {request.BudgetVND} VND
 - Days: {request.Days}
 - Interests: {request.Interests}
@@ -101,15 +181,25 @@ Return the response exactly as a JSON array matching this structure, without any
                                 Name = rec.Name,
                                 CityProvince = rec.CityProvince,
                                 Description = "AI Suggested Destination",
-                                EstimatedBaseCostVND = rec.EstimatedCostVND
+                                TotalTourCost = rec.EstimatedCostVND
                             };
                             _context.Destinations.Add(newDest);
                             await _context.SaveChangesAsync();
                             rec.DestinationID = newDest.DestinationID;
                         }
                     }
+
+                    // Wrap the AI results in PaginatedAiResponse
+                    return Ok(new PaginatedAiResponse
+                    {
+                        Items = recommendations,
+                        TotalCount = recommendations.Count,
+                        Page = 1,
+                        TotalPages = 1
+                    });
                 }
-                return Ok(recommendations);
+                
+                return Ok(new PaginatedAiResponse());
             }
             catch (Exception ex)
             {

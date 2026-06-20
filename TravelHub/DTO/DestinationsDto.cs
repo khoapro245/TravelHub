@@ -6,8 +6,13 @@ namespace TravelHub.DTO
         public string Name { get; set; } = string.Empty;
         public string CityProvince { get; set; } = string.Empty;
         public string? Description { get; set; }
-        public decimal? EstimatedBaseCostVND { get; set; }
-        public string? OpenWeatherMapCityID { get; set; }
+        public decimal? Rate { get; set; }
+        public string? Image { get; set; }
+        public string? KeyMain { get; set; }
+        public decimal? EntranceFee { get; set; }
+        public decimal? AccommodationCost { get; set; }
+        public decimal? TotalTourCost { get; set; }
+        public decimal? TourPricePerPerson { get; set; }
     }
 
     public class PaginatedList<T>

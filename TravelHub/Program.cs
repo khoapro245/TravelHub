@@ -132,6 +132,9 @@ using (var scope = app.Services.CreateScope())
             dbContext.SaveChanges();
             Console.WriteLine("Successfully seeded initial tours.");
         }
+
+        // Tự động Seed Destinations
+        await TravelHub.Data.DataSeeder.SeedDestinationsAsync(dbContext, app.Environment.ContentRootPath);
     }
     catch (Exception ex)
     {

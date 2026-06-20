@@ -43,7 +43,7 @@ namespace TravelHub.Controllers
                 {
                     DestinationID = destination.DestinationID,
                     DestinationName = destination.Name,
-                    OpenWeatherMapCityID = destination.OpenWeatherMapCityID
+                    OpenWeatherMapCityID = null
                 };
 
                 for (int i = 0; i < days; i++)

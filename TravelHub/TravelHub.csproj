@@ -32,4 +32,10 @@
     <Folder Include="Service\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="Data\places.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

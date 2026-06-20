@@ -47,7 +47,11 @@ namespace TravelHub.Model
             modelBuilder.Entity<Destination>(entity =>
             {
                 entity.HasKey(e => e.DestinationID);
-                entity.Property(e => e.EstimatedBaseCostVND).HasColumnType("decimal(18, 0)");
+                entity.Property(e => e.Rate).HasColumnType("decimal(18, 1)");
+                entity.Property(e => e.EntranceFee).HasColumnType("decimal(18, 0)");
+                entity.Property(e => e.AccommodationCost).HasColumnType("decimal(18, 0)");
+                entity.Property(e => e.TotalTourCost).HasColumnType("decimal(18, 0)");
+                entity.Property(e => e.TourPricePerPerson).HasColumnType("decimal(18, 0)");
             });
 
             // 4. Itineraries

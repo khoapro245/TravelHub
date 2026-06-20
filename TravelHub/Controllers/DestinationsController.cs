@@ -38,15 +38,15 @@ namespace TravelHub.Controllers
             {
                 if (budget.ToLower() == "low")
                 {
-                    query = query.Where(d => d.EstimatedBaseCostVND <= 2000000);
+                    query = query.Where(d => d.TotalTourCost <= 2000000);
                 }
                 else if (budget.ToLower() == "medium")
                 {
-                    query = query.Where(d => d.EstimatedBaseCostVND > 2000000 && d.EstimatedBaseCostVND <= 5000000);
+                    query = query.Where(d => d.TotalTourCost > 2000000 && d.TotalTourCost <= 5000000);
                 }
                 else if (budget.ToLower() == "high")
                 {
-                    query = query.Where(d => d.EstimatedBaseCostVND > 5000000);
+                    query = query.Where(d => d.TotalTourCost > 5000000);
                 }
             }
 
@@ -66,8 +66,13 @@ namespace TravelHub.Controllers
                     Name = d.Name,
                     CityProvince = d.CityProvince,
                     Description = d.Description,
-                    EstimatedBaseCostVND = d.EstimatedBaseCostVND,
-                    OpenWeatherMapCityID = d.OpenWeatherMapCityID
+                    Rate = d.Rate,
+                    Image = d.Image,
+                    KeyMain = d.KeyMain,
+                    EntranceFee = d.EntranceFee,
+                    AccommodationCost = d.AccommodationCost,
+                    TotalTourCost = d.TotalTourCost,
+                    TourPricePerPerson = d.TourPricePerPerson
                 })
                 .ToListAsync();
 
@@ -98,8 +103,13 @@ namespace TravelHub.Controllers
                     Name = d.Name,
                     CityProvince = d.CityProvince,
                     Description = d.Description,
-                    EstimatedBaseCostVND = d.EstimatedBaseCostVND,
-                    OpenWeatherMapCityID = d.OpenWeatherMapCityID
+                    Rate = d.Rate,
+                    Image = d.Image,
+                    KeyMain = d.KeyMain,
+                    EntranceFee = d.EntranceFee,
+                    AccommodationCost = d.AccommodationCost,
+                    TotalTourCost = d.TotalTourCost,
+                    TourPricePerPerson = d.TourPricePerPerson
                 })
                 .ToListAsync();
 
@@ -123,8 +133,13 @@ namespace TravelHub.Controllers
                 Name = destination.Name,
                 CityProvince = destination.CityProvince,
                 Description = destination.Description,
-                EstimatedBaseCostVND = destination.EstimatedBaseCostVND,
-                OpenWeatherMapCityID = destination.OpenWeatherMapCityID
+                Rate = destination.Rate,
+                Image = destination.Image,
+                KeyMain = destination.KeyMain,
+                EntranceFee = destination.EntranceFee,
+                AccommodationCost = destination.AccommodationCost,
+                TotalTourCost = destination.TotalTourCost,
+                TourPricePerPerson = destination.TourPricePerPerson
             };
 
             return Ok(result);
