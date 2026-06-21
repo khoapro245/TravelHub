@@ -12,6 +12,18 @@ namespace TravelHub.Model
 
         public int UserID { get; set; }
 
+        // Thông tin cá nhân nhập khi đăng ký HDV
+        public DateTime? DateOfBirth { get; set; }
+
+        [StringLength(20)]
+        public string? Gender { get; set; } // male, female, other, prefer-not-to-say
+
+        [StringLength(20)]
+        public string? Phone { get; set; }
+
+        [StringLength(255)]
+        public string? Address { get; set; }
+
         [StringLength(20)]
         public string? Experience { get; set; } // 0-1, 1-3, 3-5, 5+
 

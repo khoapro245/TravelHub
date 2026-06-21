@@ -4,6 +4,14 @@ namespace TravelHub.DTO
 {
     public class TourGuideRegistrationRequest
     {
+        // Thông tin cá nhân
+        public string? FullName { get; set; }
+        public string? DateOfBirth { get; set; } // ISO yyyy-MM-dd từ form
+        public string? Gender { get; set; }
+        public string? Phone { get; set; }
+        public string? Email { get; set; }
+        public string? Address { get; set; }
+
         public string? Experience { get; set; }
         public string? Languages { get; set; }
         public string? Locations { get; set; }
@@ -22,6 +30,10 @@ namespace TravelHub.DTO
         public string Username { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string? FullName { get; set; }
+        public DateTime? DateOfBirth { get; set; }
+        public string? Gender { get; set; }
+        public string? Phone { get; set; }
+        public string? Address { get; set; }
         public string? Experience { get; set; }
         public string? Languages { get; set; }
         public string? Locations { get; set; }
