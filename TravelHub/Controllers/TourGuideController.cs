@@ -49,6 +49,10 @@ namespace TravelHub.Controllers
                 }
                 
                 // Update if rejected
+                user.TourGuideProfile.DateOfBirth = ParseDate(request.DateOfBirth);
+                user.TourGuideProfile.Gender = request.Gender;
+                user.TourGuideProfile.Phone = request.Phone;
+                user.TourGuideProfile.Address = request.Address;
                 user.TourGuideProfile.Experience = request.Experience;
                 user.TourGuideProfile.Languages = request.Languages;
                 user.TourGuideProfile.Locations = request.Locations;
@@ -69,6 +73,10 @@ namespace TravelHub.Controllers
                 var profile = new TourGuideProfile
                 {
                     UserID = userId,
+                    DateOfBirth = ParseDate(request.DateOfBirth),
+                    Gender = request.Gender,
+                    Phone = request.Phone,
+                    Address = request.Address,
                     Experience = request.Experience,
                     Languages = request.Languages,
                     Locations = request.Locations,
@@ -83,6 +91,12 @@ namespace TravelHub.Controllers
                 };
 
                 _context.TourGuideProfiles.Add(profile);
+            }
+
+            // Cập nhật họ tên tài khoản từ form đăng ký nếu có nhập
+            if (!string.IsNullOrWhiteSpace(request.FullName))
+            {
+                user.FullName = request.FullName;
             }
 
             await _context.SaveChangesAsync();
@@ -115,6 +129,10 @@ namespace TravelHub.Controllers
                 Username = profile.User.Username,
                 Email = profile.User.Email,
                 FullName = profile.User.FullName,
+                DateOfBirth = profile.DateOfBirth,
+                Gender = profile.Gender,
+                Phone = profile.Phone,
+                Address = profile.Address,
                 Experience = profile.Experience,
                 Languages = profile.Languages,
                 Locations = profile.Locations,
@@ -129,6 +147,16 @@ namespace TravelHub.Controllers
             };
 
             return Ok(dto);
+        }
+
+        // Parse chuỗi ngày (yyyy-MM-dd) từ form thành DateTime?, trả null nếu rỗng/không hợp lệ
+        private static DateTime? ParseDate(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+            return DateTime.TryParse(value, out var parsed) ? parsed : (DateTime?)null;
         }
     }
 }
