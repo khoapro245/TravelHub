@@ -143,6 +143,7 @@ namespace TravelHub.Controllers
                 CertUrl = profile.CertUrl,
                 GuideAvatarUrl = profile.GuideAvatarUrl,
                 IsVerified = profile.IsVerified,
+                AdminNote = profile.AdminNote,
                 CreatedAt = profile.CreatedAt
             };
 

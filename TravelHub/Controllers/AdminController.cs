@@ -160,6 +160,9 @@ namespace TravelHub.Controllers
                 profile.IsVerified = "Rejected";
             }
 
+            // Lưu ghi chú của admin (null/rỗng nếu không nhập)
+            profile.AdminNote = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim();
+
             await _context.SaveChangesAsync();
             return Ok(new { message = request.Approve ? "Guide approved successfully." : "Guide application rejected." });
         }

@@ -54,6 +54,10 @@ namespace TravelHub.Model
         [StringLength(20)]
         public string IsVerified { get; set; } = "Pending"; // Pending, Approved, Rejected
 
+        // Ghi chú của admin khi duyệt/từ chối hồ sơ (hiển thị lại cho HDV)
+        [StringLength(1000)]
+        public string? AdminNote { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [ForeignKey("UserID")]

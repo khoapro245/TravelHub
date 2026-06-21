@@ -44,6 +44,7 @@ namespace TravelHub.DTO
         public string? CertUrl { get; set; }
         public string? GuideAvatarUrl { get; set; }
         public string IsVerified { get; set; } = string.Empty;
+        public string? AdminNote { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 
@@ -51,5 +52,6 @@ namespace TravelHub.DTO
     {
         public int ProfileID { get; set; }
         public bool Approve { get; set; } // true = Approve, false = Reject
+        public string? Note { get; set; } // Ghi chú của admin (tuỳ chọn)
     }
 }
