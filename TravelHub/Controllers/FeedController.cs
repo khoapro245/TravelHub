@@ -34,6 +34,7 @@ namespace TravelHub.Controllers
         {
             var query = _context.Posts
                 .Include(p => p.User)
+                .Where(p => !p.IsHidden)
                 .OrderByDescending(p => p.CreationDate);
 
             var totalCount = await query.CountAsync();
@@ -69,6 +70,41 @@ namespace TravelHub.Controllers
             };
 
             return Ok(result);
+        }
+
+        [HttpPost("posts/{id}/report")]
+        public async Task<IActionResult> ReportPost(int id, [FromBody] ReportPostRequest request)
+        {
+            try
+            {
+                int userId = GetCurrentUserId();
+
+                var postExists = await _context.Posts.AnyAsync(p => p.PostID == id);
+                if (!postExists)
+                    return NotFound("Post not found.");
+
+                var existingReport = await _context.Reports.FirstOrDefaultAsync(r => r.PostID == id && r.ReporterID == userId);
+                if (existingReport != null)
+                    return BadRequest("You have already reported this post.");
+
+                var report = new Report
+                {
+                    PostID = id,
+                    ReporterID = userId,
+                    Reason = request.Reason,
+                    Status = "Pending",
+                    ReportDate = DateTime.UtcNow
+                };
+
+                _context.Reports.Add(report);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Message = "Post reported successfully." });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
         }
 
         [HttpPost("posts")]

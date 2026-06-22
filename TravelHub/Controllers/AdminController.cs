@@ -166,5 +166,56 @@ namespace TravelHub.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { message = request.Approve ? "Guide approved successfully." : "Guide application rejected." });
         }
+
+        [HttpGet("reports")]
+        public async Task<IActionResult> GetReports()
+        {
+            var reports = await _context.Reports
+                .Include(r => r.Post)
+                .Include(r => r.Reporter)
+                .OrderByDescending(r => r.ReportDate)
+                .Select(r => new ReportDto
+                {
+                    ReportID = r.ReportID,
+                    PostID = r.PostID,
+                    PostTitle = r.Post.Title,
+                    PostContent = r.Post.Content ?? "",
+                    ReporterName = r.Reporter.FullName ?? r.Reporter.Username,
+                    Reason = r.Reason,
+                    Status = r.Status,
+                    ReportDate = r.ReportDate
+                })
+                .ToListAsync();
+
+            return Ok(reports);
+        }
+
+        [HttpPut("reports/{id}/status")]
+        public async Task<IActionResult> UpdateReportStatus(int id, [FromBody] UpdateReportStatusRequest request)
+        {
+            var report = await _context.Reports.Include(r => r.Post).FirstOrDefaultAsync(r => r.ReportID == id);
+            if (report == null)
+                return NotFound("Report not found.");
+
+            if (request.Status == "Resolved")
+            {
+                report.Status = "Resolved";
+                if (report.Post != null)
+                {
+                    report.Post.IsHidden = true;
+                }
+            }
+            else if (request.Status == "Rejected")
+            {
+                report.Status = "Rejected";
+            }
+            else
+            {
+                return BadRequest("Invalid status. Must be 'Resolved' or 'Rejected'.");
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { Message = "Report status updated successfully." });
+        }
     }
 }

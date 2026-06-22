@@ -22,6 +22,7 @@ namespace TravelHub.Model
         public DbSet<Tour> Tours { get; set; } = null!;
         public DbSet<TourBooking> TourBookings { get; set; } = null!;
         public DbSet<TourGuideProfile> TourGuideProfiles { get; set; } = null!;
+        public DbSet<Report> Reports { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -172,6 +173,15 @@ namespace TravelHub.Model
                 entity.HasKey(e => e.BookingID);
                 entity.Property(e => e.BookingDate).HasDefaultValueSql("GETDATE()");
                 entity.HasOne(d => d.User).WithMany().HasForeignKey(d => d.UserID);
+            });
+
+            // 15. Reports
+            modelBuilder.Entity<Report>(entity =>
+            {
+                entity.HasKey(e => e.ReportID);
+                entity.Property(e => e.ReportDate).HasDefaultValueSql("GETDATE()");
+                entity.HasOne(d => d.Post).WithMany().HasForeignKey(d => d.PostID).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(d => d.Reporter).WithMany().HasForeignKey(d => d.ReporterID).OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

@@ -11,6 +11,7 @@ namespace TravelHub.Model
         public string Title { get; set; } = null!;
         public string? Content { get; set; }
         public int LikesCount { get; set; } = 0;
+        public bool IsHidden { get; set; } = false;
         public DateTime CreationDate { get; set; }
 
         public virtual User User { get; set; } = null!;
