@@ -29,7 +29,7 @@ namespace TravelHub.Controllers
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 12;
 
-            var tourQuery = _context.Tours.AsQueryable();
+            IQueryable<Tour> tourQuery = _context.Tours.OrderByDescending(t => t.TourID);
             var destQuery = _context.Destinations.AsQueryable();
 
             if (!string.IsNullOrEmpty(destination) && destination != "Tất cả")
@@ -57,6 +57,7 @@ namespace TravelHub.Controllers
                 DepartureLocation = t.DepartureLocation,
                 DepartureDate = t.DepartureDate,
                 DurationDays = t.DurationDays,
+                DurationText = t.DurationText,
                 PriceVND = t.PriceVND,
                 ImageUrl = t.ImageUrl,
                 Description = t.Description,
@@ -170,6 +171,7 @@ namespace TravelHub.Controllers
                     DepartureLocation = request.DepartureLocation,
                     DepartureDate = request.DepartureDate,
                     DurationDays = request.DurationDays,
+                    DurationText = request.DurationText,
                     PriceVND = request.PriceVND,
                     ImageUrl = request.ImageUrl,
                     Description = request.Description,
@@ -184,6 +186,44 @@ namespace TravelHub.Controllers
             catch (Exception ex)
             {
                 System.IO.File.AppendAllText("error_log.txt", $"{DateTime.Now}: {ex.ToString()}\n");
+                return StatusCode(500, new { message = ex.Message, details = ex.InnerException?.Message });
+            }
+        }
+
+        [HttpPut("{id}")]
+        [Authorize(Roles = "TourGuide")]
+        public async Task<IActionResult> UpdateTour(int id, [FromBody] CreateTourRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid) return BadRequest(ModelState);
+
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                {
+                    return Unauthorized("User not found in token.");
+                }
+
+                var tour = await _context.Tours.FindAsync(id);
+                if (tour == null) return NotFound("Tour not found");
+                if (tour.ProviderID != userId) return Forbid("You do not have permission to edit this tour.");
+
+                tour.Title = request.Title;
+                tour.Destination = request.Destination;
+                tour.DepartureLocation = request.DepartureLocation;
+                tour.DepartureDate = request.DepartureDate;
+                tour.DurationDays = request.DurationDays;
+                tour.DurationText = request.DurationText;
+                tour.PriceVND = request.PriceVND;
+                tour.ImageUrl = request.ImageUrl;
+                tour.Description = request.Description;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Tour updated successfully", tourId = tour.TourID });
+            }
+            catch (Exception ex)
+            {
                 return StatusCode(500, new { message = ex.Message, details = ex.InnerException?.Message });
             }
         }
@@ -209,6 +249,7 @@ namespace TravelHub.Controllers
                     DepartureLocation = t.DepartureLocation,
                     DepartureDate = t.DepartureDate,
                     DurationDays = t.DurationDays,
+                    DurationText = t.DurationText,
                     PriceVND = t.PriceVND,
                     ImageUrl = t.ImageUrl,
                     Description = t.Description,
@@ -240,6 +281,30 @@ namespace TravelHub.Controllers
             }
 
             return Ok(destinations);
+        }
+
+        [HttpGet("recent")]
+        public async Task<IActionResult> GetRecentTours()
+        {
+            var tours = await _context.Tours
+                .OrderByDescending(t => t.TourID)
+                .Take(6)
+                .Select(t => new TourResponse
+                {
+                    TourID = t.TourID,
+                    Title = t.Title,
+                    Destination = t.Destination,
+                    DepartureLocation = t.DepartureLocation,
+                    DepartureDate = t.DepartureDate,
+                    DurationDays = t.DurationDays,
+                    PriceVND = t.PriceVND,
+                    ImageUrl = t.ImageUrl,
+                    Description = t.Description,
+                    NumberOfBookings = t.NumberOfBookings
+                })
+                .ToListAsync();
+
+            return Ok(tours);
         }
 
         [HttpPost("book")]

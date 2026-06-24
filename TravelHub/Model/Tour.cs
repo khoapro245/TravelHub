@@ -28,6 +28,9 @@ namespace TravelHub.Model
         [Required]
         public int DurationDays { get; set; }
 
+        [MaxLength(50)]
+        public string? DurationText { get; set; }
+
         [Required]
         [Column(TypeName = "decimal(18,2)")]
         public decimal PriceVND { get; set; }

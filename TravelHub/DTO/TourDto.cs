@@ -11,6 +11,7 @@ namespace TravelHub.DTO
         public string DepartureLocation { get; set; } = string.Empty;
         public DateTime DepartureDate { get; set; }
         public int DurationDays { get; set; }
+        public string? DurationText { get; set; }
         public decimal PriceVND { get; set; }
         public string? ImageUrl { get; set; }
         public string? Description { get; set; }
@@ -31,6 +32,7 @@ namespace TravelHub.DTO
         public string DepartureLocation { get; set; } = string.Empty;
         public DateTime DepartureDate { get; set; }
         public int DurationDays { get; set; }
+        public string? DurationText { get; set; }
         public decimal PriceVND { get; set; }
         public string? ImageUrl { get; set; }
         public string? Description { get; set; }

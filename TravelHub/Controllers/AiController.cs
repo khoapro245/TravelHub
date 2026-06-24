@@ -55,13 +55,51 @@ namespace TravelHub.Controllers
 
             var dbDestinations = await query.ToListAsync();
             
-            // Chấm điểm ưu tiên theo KeyMain
-            var scoredDestinations = dbDestinations.Select(d => 
+            // Query Tours
+            var tourQuery = _context.Tours.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(searchLocation))
             {
-                int score = 0;
+                tourQuery = tourQuery.Where(t => t.Destination.Contains(searchLocation) || t.Title.Contains(searchLocation));
+            }
+            if (request.BudgetVND > 0)
+            {
+                var maxBudget = request.BudgetVND * 1.1m;
+                tourQuery = tourQuery.Where(t => t.PriceVND <= maxBudget);
+            }
+            var dbTours = await tourQuery.ToListAsync();
+
+            var scoredItems = new List<dynamic>();
+
+            foreach (var t in dbTours)
+            {
+                var response = new AiRecommendResponse
+                {
+                    DestinationID = t.TourID + 20000,
+                    Name = t.Title,
+                    CityProvince = t.Destination,
+                    MatchReason = "⭐ Tour đặc biệt từ Hướng dẫn viên TravelHub rất phù hợp với bạn!",
+                    Distance = "Tùy vị trí",
+                    EstimatedCostVND = t.PriceVND,
+                    DailyCostBreakdown = new DailyCostBreakdown
+                    {
+                        Accommodation = "Bao gồm trong Tour",
+                        Activities = "Bao gồm trong Tour",
+                        Food = "Bao gồm trong Tour",
+                        Transportation = "Bao gồm trong Tour",
+                        Entertainment = "Tùy chọn",
+                        Shopping = "Tùy chọn"
+                    }
+                };
+                
+                scoredItems.Add(new { Response = response, Score = 100 });
+            }
+
+            // Chấm điểm ưu tiên theo KeyMain
+            foreach (var d in dbDestinations)
+            {
+                int score = 50; // default score for destination matching search
                 if (!string.IsNullOrWhiteSpace(request.Interests) && !string.IsNullOrWhiteSpace(d.KeyMain))
                 {
-                    // Lọc mảng theo dấu phẩy
                     var interests = request.Interests.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                     foreach (var interest in interests)
                     {
@@ -71,37 +109,39 @@ namespace TravelHub.Controllers
                         }
                     }
                 }
-                return new { Destination = d, Score = score };
-            })
-            // Nếu có Interests, nên ưu tiên những dòng có Score > 0, 
-            // nhưng vì yêu cầu "hiển thị hết ra" nên ta sẽ lấy hết và sort theo Score
-            .OrderByDescending(x => x.Score)
-            .ToList();
+                
+                var response = new AiRecommendResponse
+                {
+                    DestinationID = d.DestinationID,
+                    Name = d.Name,
+                    CityProvince = d.CityProvince,
+                    MatchReason = score > 50 ? "Địa điểm lý tưởng cực kỳ phù hợp với sở thích của bạn." : "Một trong những địa điểm tuyệt vời có trong hệ thống.",
+                    Distance = "Tùy vị trí",
+                    EstimatedCostVND = d.TotalTourCost ?? d.AccommodationCost ?? 0,
+                    DailyCostBreakdown = new DailyCostBreakdown
+                    {
+                        Accommodation = d.AccommodationCost?.ToString() ?? "N/A",
+                        Activities = d.EntranceFee?.ToString() ?? "N/A",
+                        Food = "Tự túc",
+                        Transportation = "Tự túc",
+                        Entertainment = "Tùy chọn",
+                        Shopping = "Tùy chọn"
+                    }
+                };
+                
+                scoredItems.Add(new { Response = response, Score = score });
+            }
 
-            if (scoredDestinations.Any())
+            var finalSortedItems = scoredItems.OrderByDescending(x => x.Score).ToList();
+
+            if (finalSortedItems.Any())
             {
-                int totalCount = scoredDestinations.Count;
-                var pagedItems = scoredDestinations
+                int totalCount = finalSortedItems.Count;
+                var pagedItems = finalSortedItems
                     .Skip((request.Page - 1) * request.PageSize)
                     .Take(request.PageSize)
-                    .Select(x => new AiRecommendResponse
-                    {
-                        DestinationID = x.Destination.DestinationID,
-                        Name = x.Destination.Name,
-                        CityProvince = x.Destination.CityProvince,
-                        MatchReason = x.Score > 0 ? "Địa điểm lý tưởng cực kỳ phù hợp với sở thích của bạn." : "Một trong những địa điểm tuyệt vời có trong hệ thống.",
-                        Distance = "Tùy vị trí",
-                        EstimatedCostVND = x.Destination.TotalTourCost ?? x.Destination.AccommodationCost ?? 0,
-                        DailyCostBreakdown = new DailyCostBreakdown
-                        {
-                            Accommodation = x.Destination.AccommodationCost?.ToString() ?? "N/A",
-                            Activities = x.Destination.EntranceFee?.ToString() ?? "N/A",
-                            Food = "Tự túc",
-                            Transportation = "Tự túc",
-                            Entertainment = "Tùy chọn",
-                            Shopping = "Tùy chọn"
-                        }
-                    }).ToList();
+                    .Select(x => (AiRecommendResponse)x.Response)
+                    .ToList();
 
                 return Ok(new PaginatedAiResponse
                 {
