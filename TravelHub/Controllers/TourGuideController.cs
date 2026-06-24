@@ -13,10 +13,12 @@ namespace TravelHub.Controllers
     public class TourGuideController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IWebHostEnvironment _env;
 
-        public TourGuideController(AppDbContext context)
+        public TourGuideController(AppDbContext context, IWebHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
         [HttpPost("register")]
@@ -58,10 +60,10 @@ namespace TravelHub.Controllers
                 user.TourGuideProfile.Locations = request.Locations;
                 user.TourGuideProfile.Bio = request.Bio;
                 user.TourGuideProfile.TourCategories = request.TourCategories;
-                user.TourGuideProfile.IdFrontUrl = request.IdFrontUrl;
-                user.TourGuideProfile.IdBackUrl = request.IdBackUrl;
-                user.TourGuideProfile.CertUrl = request.CertUrl;
-                user.TourGuideProfile.GuideAvatarUrl = request.GuideAvatarUrl;
+                user.TourGuideProfile.IdFrontUrl = MoveTempFile(request.IdFrontUrl);
+                user.TourGuideProfile.IdBackUrl = MoveTempFile(request.IdBackUrl);
+                user.TourGuideProfile.CertUrl = MoveTempFile(request.CertUrl);
+                user.TourGuideProfile.GuideAvatarUrl = MoveTempFile(request.GuideAvatarUrl);
                 user.TourGuideProfile.IsVerified = "Pending";
                 user.TourGuideProfile.CreatedAt = DateTime.UtcNow;
 
@@ -82,10 +84,10 @@ namespace TravelHub.Controllers
                     Locations = request.Locations,
                     Bio = request.Bio,
                     TourCategories = request.TourCategories,
-                    IdFrontUrl = request.IdFrontUrl,
-                    IdBackUrl = request.IdBackUrl,
-                    CertUrl = request.CertUrl,
-                    GuideAvatarUrl = request.GuideAvatarUrl,
+                    IdFrontUrl = MoveTempFile(request.IdFrontUrl),
+                    IdBackUrl = MoveTempFile(request.IdBackUrl),
+                    CertUrl = MoveTempFile(request.CertUrl),
+                    GuideAvatarUrl = MoveTempFile(request.GuideAvatarUrl),
                     IsVerified = "Pending",
                     CreatedAt = DateTime.UtcNow
                 };
@@ -158,6 +160,34 @@ namespace TravelHub.Controllers
                 return null;
             }
             return DateTime.TryParse(value, out var parsed) ? parsed : (DateTime?)null;
+        }
+
+        private string? MoveTempFile(string? tempUrl)
+        {
+            if (string.IsNullOrWhiteSpace(tempUrl) || !tempUrl.StartsWith("/uploads/temp/"))
+            {
+                return tempUrl;
+            }
+
+            var fileName = Path.GetFileName(tempUrl);
+            var webRootPath = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            var tempPath = Path.Combine(webRootPath, "uploads", "temp", fileName);
+            var guidesFolder = Path.Combine(webRootPath, "uploads", "guides");
+
+            if (!Directory.Exists(guidesFolder))
+            {
+                Directory.CreateDirectory(guidesFolder);
+            }
+
+            var newPath = Path.Combine(guidesFolder, fileName);
+
+            if (System.IO.File.Exists(tempPath))
+            {
+                System.IO.File.Move(tempPath, newPath);
+                return $"/uploads/guides/{fileName}";
+            }
+
+            return tempUrl;
         }
     }
 }

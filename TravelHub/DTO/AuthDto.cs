@@ -28,6 +28,7 @@ namespace TravelHub.DTO
         public int UserID { get; set; }
         public string Username { get; set; } = string.Empty;
         public string Role { get; set; } = "User";
+        public bool IsPremium { get; set; } = false;
     }
 
     public class GoogleLoginRequest

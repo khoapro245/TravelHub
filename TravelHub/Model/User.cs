@@ -47,6 +47,9 @@ namespace TravelHub.Model
         [StringLength(20)]
         public string Role { get; set; } = "Customer"; // Customer, TourGuide, Admin
 
+        public bool IsPremium { get; set; } = false;
+        public DateTime? PremiumExpiryDate { get; set; }
+
         // Quan hệ 1 - 1
         public virtual UserPreference? UserPreference { get; set; }
         public virtual TourGuideProfile? TourGuideProfile { get; set; }

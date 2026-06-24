@@ -44,7 +44,8 @@ namespace TravelHub.Controllers
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
                 UserID = user.UserID,
-                Username = user.Username
+                Username = user.Username,
+                IsPremium = user.IsPremium
             };
         }
 
@@ -106,8 +107,27 @@ namespace TravelHub.Controllers
 
             var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == request.Email);
 
-            // Nếu không tìm thấy hoặc password sai thì báo lỗi
-            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            if (user == null)
+                return Unauthorized("Invalid email or password.");
+
+            bool isPasswordValid = false;
+            try
+            {
+                isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
+            }
+            catch (BCrypt.Net.SaltParseException)
+            {
+                // Handle plain text passwords inserted manually during testing
+                if (request.Password == user.PasswordHash)
+                {
+                    isPasswordValid = true;
+                    // Auto-upgrade to BCrypt hash
+                    user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            if (!isPasswordValid)
                 return Unauthorized("Invalid email or password.");
 
             var response = await GenerateAuthResponseAsync(user);

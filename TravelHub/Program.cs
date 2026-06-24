@@ -105,6 +105,7 @@ builder.Services.AddHttpClient();
 // Đăng ký DbContext kết nối SQL Server
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddHostedService<TravelHub.Service.TempFileCleanupService>();
 
 var app = builder.Build();
 
@@ -182,6 +183,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles(); // Cho phép phục vụ file tĩnh từ wwwroot (ảnh upload)
 
 // 🟢 PHẢI THÊM DÒNG NÀY ĐỂ KÍCH HOẠT CORS
 app.UseCors("AllowFrontend");
