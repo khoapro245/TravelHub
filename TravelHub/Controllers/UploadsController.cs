@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 
 namespace TravelHub.Controllers
 {
@@ -7,11 +9,11 @@ namespace TravelHub.Controllers
     [ApiController]
     public class UploadsController : ControllerBase
     {
-        private readonly IWebHostEnvironment _env;
+        private readonly IConfiguration _configuration;
 
-        public UploadsController(IWebHostEnvironment env)
+        public UploadsController(IConfiguration configuration)
         {
-            _env = env;
+            _configuration = configuration;
         }
 
         [HttpPost]
@@ -38,29 +40,57 @@ namespace TravelHub.Controllers
                  return BadRequest(new { message = "Invalid file content type." });
             }
 
-            // 3. Generate secure random file name
-            var fileName = Guid.NewGuid().ToString() + extension;
+            // 3. Configure Cloudinary
+            var cloudName = _configuration["Cloudinary:CloudName"];
+            var apiKey = _configuration["Cloudinary:ApiKey"];
+            var apiSecret = _configuration["Cloudinary:ApiSecret"];
 
-            // 4. Check if WebRootPath is null (can happen if wwwroot doesn't exist yet)
-            var webRootPath = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-
-            // 5. Save to wwwroot/uploads/temp
-            var tempFolder = Path.Combine(webRootPath, "uploads", "temp");
-            if (!Directory.Exists(tempFolder))
+            if (string.IsNullOrEmpty(cloudName) || string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(apiSecret) || apiKey == "YOUR_API_KEY_HERE")
             {
-                Directory.CreateDirectory(tempFolder);
+                return StatusCode(500, new { message = "Cloudinary configuration is missing or invalid. Please check appsettings.json" });
             }
 
-            var filePath = Path.Combine(tempFolder, fileName);
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
+            var account = new Account(cloudName, apiKey, apiSecret);
+            var cloudinary = new Cloudinary(account);
+            
+            // 4. Upload to Cloudinary
+            using var stream = file.OpenReadStream();
+            
+            if (extension == ".pdf")
             {
-                await file.CopyToAsync(stream);
-            }
+                var uploadParams = new RawUploadParams()
+                {
+                    File = new FileDescription(file.FileName, stream),
+                    Folder = "travelhub_uploads"
+                };
+                var uploadResult = await cloudinary.UploadAsync(uploadParams);
+                
+                if (uploadResult.Error != null)
+                {
+                    return StatusCode(500, new { message = "Upload failed: " + uploadResult.Error.Message });
+                }
 
-            // Return relative URL
-            var fileUrl = $"/uploads/temp/{fileName}";
-            return Ok(new { url = fileUrl });
+                return Ok(new { url = uploadResult.SecureUrl.ToString() });
+            }
+            else
+            {
+                var uploadParams = new ImageUploadParams()
+                {
+                    File = new FileDescription(file.FileName, stream),
+                    Folder = "travelhub_uploads",
+                    UseFilename = true,
+                    UniqueFilename = true,
+                    Overwrite = false
+                };
+                var uploadResult = await cloudinary.UploadAsync(uploadParams);
+
+                if (uploadResult.Error != null)
+                {
+                    return StatusCode(500, new { message = "Upload failed: " + uploadResult.Error.Message });
+                }
+
+                return Ok(new { url = uploadResult.SecureUrl.ToString() });
+            }
         }
     }
 }
