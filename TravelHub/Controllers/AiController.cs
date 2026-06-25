@@ -80,6 +80,7 @@ namespace TravelHub.Controllers
                     MatchReason = "⭐ Tour đặc biệt từ Hướng dẫn viên TravelHub rất phù hợp với bạn!",
                     Distance = "Tùy vị trí",
                     EstimatedCostVND = t.PriceVND,
+                    ImageUrl = t.ImageUrl ?? string.Empty,
                     DailyCostBreakdown = new DailyCostBreakdown
                     {
                         Accommodation = "Bao gồm trong Tour",
@@ -118,6 +119,7 @@ namespace TravelHub.Controllers
                     MatchReason = score > 50 ? "Địa điểm lý tưởng cực kỳ phù hợp với sở thích của bạn." : "Một trong những địa điểm tuyệt vời có trong hệ thống.",
                     Distance = "Tùy vị trí",
                     EstimatedCostVND = d.TotalTourCost ?? d.AccommodationCost ?? 0,
+                    ImageUrl = d.Image ?? string.Empty,
                     DailyCostBreakdown = new DailyCostBreakdown
                     {
                         Accommodation = d.AccommodationCost?.ToString() ?? "N/A",

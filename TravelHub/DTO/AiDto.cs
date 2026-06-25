@@ -26,6 +26,7 @@ namespace TravelHub.DTO
         public string MatchReason { get; set; } = string.Empty;
         public string Distance { get; set; } = string.Empty;
         public decimal EstimatedCostVND { get; set; }
+        public string ImageUrl { get; set; } = string.Empty;
         public DailyCostBreakdown DailyCostBreakdown { get; set; } = new DailyCostBreakdown();
     }
 
