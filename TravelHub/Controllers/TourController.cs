@@ -30,12 +30,10 @@ namespace TravelHub.Controllers
             if (pageSize < 1) pageSize = 12;
 
             IQueryable<Tour> tourQuery = _context.Tours.OrderByDescending(t => t.TourID);
-            var destQuery = _context.Destinations.AsQueryable();
 
             if (!string.IsNullOrEmpty(destination) && destination != "Tất cả")
             {
                 tourQuery = tourQuery.Where(t => t.Destination.Contains(destination) || t.Title.Contains(destination));
-                destQuery = destQuery.Where(d => d.CityProvince.Contains(destination) || d.Name.Contains(destination));
             }
 
             if (!string.IsNullOrEmpty(departureLocation) && departureLocation != "Tất cả")
@@ -64,25 +62,7 @@ namespace TravelHub.Controllers
                 NumberOfBookings = t.NumberOfBookings
             }).ToListAsync();
 
-            var dests = await destQuery.ToListAsync(); // Fetch into memory to use Random
-            
-            var random = new Random();
-            var mappedDests = dests.Select(d => new TourResponse
-            {
-                TourID = d.DestinationID + 10000, 
-                Title = d.Name,
-                Destination = d.CityProvince,
-                DepartureLocation = "Tự túc",
-                DepartureDate = departureDate ?? DateTime.Now.AddDays(random.Next(1, 10)),
-                DurationDays = 1,
-                PriceVND = d.TotalTourCost ?? 500000,
-                ImageUrl = d.Image ?? "https://images.unsplash.com/photo-1599839619722-39751411ea63?w=800",
-                Description = d.Description ?? "Tham quan địa danh nổi tiếng",
-                NumberOfBookings = random.Next(10, 200)
-            }).ToList();
 
-            // Combine both results
-            tours.AddRange(mappedDests);
 
             // Apply pagination
             var totalItems = tours.Count;
