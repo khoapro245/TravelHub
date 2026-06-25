@@ -21,6 +21,7 @@ namespace TravelHub.Controllers
         [HttpGet]
         public async Task<IActionResult> GetDestinations(
             [FromQuery] string? search,
+            [FromQuery] string? location,
             [FromQuery] string? budget,
             [FromQuery] string? category,
             [FromQuery] int page = 1,
@@ -31,6 +32,11 @@ namespace TravelHub.Controllers
             if (!string.IsNullOrEmpty(search))
             {
                 query = query.Where(d => d.Name.Contains(search) || d.CityProvince.Contains(search));
+            }
+
+            if (!string.IsNullOrEmpty(location))
+            {
+                query = query.Where(d => d.CityProvince.Contains(location));
             }
 
             // Mocks for budget/category as the Destination model might not have them explicitly
