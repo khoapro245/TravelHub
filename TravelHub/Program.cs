@@ -6,6 +6,12 @@ using System.Text;
 using TravelHub.Model;
 using TravelHub.Service;
 
+// Load .env file (if present) into environment variables BEFORE building the host.
+// ASP.NET Core's default EnvironmentVariables provider then maps "Section__Key"
+// entries onto Configuration, overriding appsettings.json. Traverses up the
+// directory tree so it works whether run from the project dir or output dir.
+DotNetEnv.Env.TraversePath().Load();
+
 var builder = WebApplication.CreateBuilder(args);
 
 // =========================================================================
