@@ -363,8 +363,3 @@ MigrationBackup/
 FodyWeavers.xsd
 # Ignore local settings
 appsettings.Development.json
-
-# Environment variables (secrets - do NOT commit)
-.env
-*.env
-.env.*
