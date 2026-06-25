@@ -144,5 +144,68 @@ namespace TravelHub.Controllers
 
             return Ok(result);
         }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateDestination([FromBody] CreateDestinationRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid) return BadRequest(ModelState);
+
+                var destination = new Destination
+                {
+                    Name = request.Name,
+                    CityProvince = request.CityProvince,
+                    Description = request.Description,
+                    Rate = request.Rate,
+                    Image = request.Image,
+                    KeyMain = request.KeyMain,
+                    EntranceFee = request.EntranceFee,
+                    AccommodationCost = request.AccommodationCost,
+                    TotalTourCost = request.TotalTourCost,
+                    TourPricePerPerson = request.TourPricePerPerson
+                };
+
+                _context.Destinations.Add(destination);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Destination created successfully", destinationId = destination.DestinationID });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message, details = ex.InnerException?.Message });
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateDestination(int id, [FromBody] UpdateDestinationRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid) return BadRequest(ModelState);
+
+                var destination = await _context.Destinations.FindAsync(id);
+                if (destination == null) return NotFound("Destination not found");
+
+                destination.Name = request.Name;
+                destination.CityProvince = request.CityProvince;
+                destination.Description = request.Description;
+                destination.Rate = request.Rate;
+                destination.Image = request.Image;
+                destination.KeyMain = request.KeyMain;
+                destination.EntranceFee = request.EntranceFee;
+                destination.AccommodationCost = request.AccommodationCost;
+                destination.TotalTourCost = request.TotalTourCost;
+                destination.TourPricePerPerson = request.TourPricePerPerson;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Destination updated successfully", destinationId = destination.DestinationID });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message, details = ex.InnerException?.Message });
+            }
+        }
     }
 }

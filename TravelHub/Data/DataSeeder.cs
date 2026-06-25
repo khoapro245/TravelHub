@@ -62,6 +62,13 @@ namespace TravelHub.Data
                         if (existing.TotalTourCost == null && dest.TotalTourCost != null) { existing.TotalTourCost = dest.TotalTourCost; isUpdated = true; }
                         if (existing.TourPricePerPerson == null && dest.TourPricePerPerson != null) { existing.TourPricePerPerson = dest.TourPricePerPerson; isUpdated = true; }
                         
+                        // Cập nhật lại ảnh nếu có sự thay đổi trong file json
+                        if (dest.Image != null && existing.Image != dest.Image) 
+                        { 
+                            existing.Image = dest.Image; 
+                            isUpdated = true; 
+                        }
+                        
                         if (isUpdated) 
                         {
                             context.Destinations.Update(existing);
