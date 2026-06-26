@@ -50,6 +50,9 @@ namespace TravelHub.Model
         public bool IsPremium { get; set; } = false;
         public DateTime? PremiumExpiryDate { get; set; }
 
+        // Khi bị chặn, người dùng không thể đăng nhập hoặc truy cập các API yêu cầu xác thực
+        public bool IsBlocked { get; set; } = false;
+
         // Quan hệ 1 - 1
         public virtual UserPreference? UserPreference { get; set; }
         public virtual TourGuideProfile? TourGuideProfile { get; set; }

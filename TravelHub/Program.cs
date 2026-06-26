@@ -191,6 +191,9 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Đẩy người dùng bị khoá ra ngay lập tức (sau khi đã xác thực)
+app.UseMiddleware<TravelHub.Middleware.BlockedUserMiddleware>();
+
 app.MapControllers();
 app.MapHub<TravelHub.Hubs.ChatHub>("/hubs/chat");
 
