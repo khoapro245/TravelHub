@@ -152,6 +152,7 @@ namespace TravelHub.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateDestination([FromBody] CreateDestinationRequest request)
         {
             try
@@ -184,6 +185,7 @@ namespace TravelHub.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateDestination(int id, [FromBody] UpdateDestinationRequest request)
         {
             try

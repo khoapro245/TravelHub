@@ -48,9 +48,10 @@ namespace TravelHub.Controllers
             // Lọc theo ngân sách (nếu user nhập > 0)
             if (request.BudgetVND > 0)
             {
-                // Cho phép độ chênh lệch ngân sách khoảng 10%
-                var maxBudget = request.BudgetVND * 1.1m; 
-                query = query.Where(d => d.TotalTourCost <= maxBudget);
+                // Cho phép độ chênh lệch ngân sách +/- 20%
+                var minBudget = request.BudgetVND * 0.8m; 
+                var maxBudget = request.BudgetVND * 1.2m; 
+                query = query.Where(d => d.TotalTourCost >= minBudget && d.TotalTourCost <= maxBudget);
             }
 
             var dbDestinations = await query.ToListAsync();
@@ -63,10 +64,32 @@ namespace TravelHub.Controllers
             }
             if (request.BudgetVND > 0)
             {
-                var maxBudget = request.BudgetVND * 1.1m;
-                tourQuery = tourQuery.Where(t => t.PriceVND <= maxBudget);
+                var minBudget = request.BudgetVND * 0.8m;
+                var maxBudget = request.BudgetVND * 1.2m;
+                tourQuery = tourQuery.Where(t => t.PriceVND >= minBudget && t.PriceVND <= maxBudget);
             }
             var dbTours = await tourQuery.ToListAsync();
+
+            // Lọc theo Sở thích (Interests) - Ép buộc phải có từ khóa
+            if (!string.IsNullOrWhiteSpace(request.Interests))
+            {
+                var interests = request.Interests.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                
+                dbDestinations = dbDestinations.Where(d => 
+                    interests.Any(i => 
+                        (d.KeyMain != null && d.KeyMain.Contains(i, StringComparison.OrdinalIgnoreCase)) ||
+                        (d.Description != null && d.Description.Contains(i, StringComparison.OrdinalIgnoreCase))
+                    )
+                ).ToList();
+
+                dbTours = dbTours.Where(t => 
+                    interests.Any(i => 
+                        (t.Title != null && t.Title.Contains(i, StringComparison.OrdinalIgnoreCase)) ||
+                        (t.Description != null && t.Description.Contains(i, StringComparison.OrdinalIgnoreCase)) ||
+                        (t.Destination != null && t.Destination.Contains(i, StringComparison.OrdinalIgnoreCase))
+                    )
+                ).ToList();
+            }
 
             var scoredItems = new List<dynamic>();
 
@@ -111,6 +134,10 @@ namespace TravelHub.Controllers
                     }
                 }
                 
+                decimal estimatedCost = d.TotalTourCost ?? d.AccommodationCost ?? request.BudgetVND;
+                int days = request.Days > 0 ? request.Days : 3;
+                decimal dailyBudget = estimatedCost / days;
+                
                 var response = new AiRecommendResponse
                 {
                     DestinationID = d.DestinationID,
@@ -118,23 +145,26 @@ namespace TravelHub.Controllers
                     CityProvince = d.CityProvince,
                     MatchReason = score > 50 ? "Địa điểm lý tưởng cực kỳ phù hợp với sở thích của bạn." : "Một trong những địa điểm tuyệt vời có trong hệ thống.",
                     Distance = "Tùy vị trí",
-                    EstimatedCostVND = d.TotalTourCost ?? d.AccommodationCost ?? 0,
+                    EstimatedCostVND = estimatedCost,
                     ImageUrl = d.Image ?? string.Empty,
                     DailyCostBreakdown = new DailyCostBreakdown
                     {
-                        Accommodation = d.AccommodationCost?.ToString() ?? "N/A",
-                        Activities = d.EntranceFee?.ToString() ?? "N/A",
-                        Food = "Tự túc",
-                        Transportation = "Tự túc",
-                        Entertainment = "Tùy chọn",
-                        Shopping = "Tùy chọn"
+                        Accommodation = $"~{Math.Round(dailyBudget * 0.4m):N0} VNĐ",
+                        Food = $"~{Math.Round(dailyBudget * 0.3m):N0} VNĐ",
+                        Transportation = $"~{Math.Round(dailyBudget * 0.1m):N0} VNĐ",
+                        Activities = $"~{Math.Round(dailyBudget * 0.1m):N0} VNĐ",
+                        Entertainment = $"~{Math.Round(dailyBudget * 0.05m):N0} VNĐ",
+                        Shopping = $"~{Math.Round(dailyBudget * 0.05m):N0} VNĐ"
                     }
                 };
                 
                 scoredItems.Add(new { Response = response, Score = score });
             }
 
-            var finalSortedItems = scoredItems.OrderByDescending(x => x.Score).ToList();
+            // Sắp xếp theo Giá (từ cao xuống thấp)
+            var finalSortedItems = scoredItems
+                .OrderByDescending(x => ((AiRecommendResponse)x.Response).EstimatedCostVND)
+                .ToList();
 
             if (finalSortedItems.Any())
             {
@@ -172,7 +202,11 @@ You are an expert travel assistant. Based on the following user preferences, rec
 
 For each destination, provide the Name, CityProvince (or Country), a MatchReason explaining why it's a good fit based on ALL their specific preferences, and an EstimatedCostVND (total estimated cost for {request.Days} days).
 Also provide a `distance` field which is the estimated distance (e.g. ""1200 km"") from {request.Departure} to the recommended destination.
-Also provide a `dailyCostBreakdown` object containing estimated daily cost ranges in VND (as strings, e.g., ""300.000đ - 500.000đ"") for the following categories: accommodation, food, transportation, activities, entertainment, shopping.
+Also provide a `dailyCostBreakdown` object containing estimated daily cost ranges in VND (as strings, e.g., ""300.000đ""). 
+CRITICAL RULE 1: The sum of the dailyCostBreakdown values multiplied by the number of days ({request.Days}) MUST roughly equal the EstimatedCostVND.
+CRITICAL RULE 2: The EstimatedCostVND MUST strictly be within +/- 20% of the user's Budget ({request.BudgetVND} VND).
+CRITICAL RULE 3: If 'Destination to' is specified and not empty, you MUST ONLY recommend places within that specific destination.
+CRITICAL RULE 4: The recommendations MUST strictly feature the user's Interests ({request.Interests}).
 
 Return the response exactly as a JSON array matching this structure, without any markdown formatting or extra text:
 [
@@ -183,12 +217,12 @@ Return the response exactly as a JSON array matching this structure, without any
     ""distance"": ""1200 km"",
     ""estimatedCostVND"": 1000000,
     ""dailyCostBreakdown"": {{
-      ""accommodation"": ""300.000đ - 500.000đ"",
-      ""food"": ""200.000đ - 400.000đ"",
-      ""transportation"": ""100.000đ - 200.000đ"",
-      ""activities"": ""150.000đ - 300.000đ"",
-      ""entertainment"": ""100.000đ - 200.000đ"",
-      ""shopping"": ""100.000đ - 300.000đ""
+      ""accommodation"": ""150.000đ"",
+      ""food"": ""100.000đ"",
+      ""transportation"": ""50.000đ"",
+      ""activities"": ""30.000đ"",
+      ""entertainment"": ""0đ"",
+      ""shopping"": ""0đ""
     }}
   }}
 ]";

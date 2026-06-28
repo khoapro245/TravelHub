@@ -272,6 +272,13 @@ namespace TravelHub.Controllers
 
                 if (!chat.ChatParticipants.Any(cp => cp.UserID == userId))
                     return Forbid("You are not a participant of this group.");
+                    
+                // Optional: For stricter security, only the group creator (first participant) can disband
+                var firstParticipant = chat.ChatParticipants.OrderBy(cp => cp.JoinedDate).FirstOrDefault();
+                if (firstParticipant != null && firstParticipant.UserID != userId)
+                {
+                    return Forbid("Only the group creator can disband the group.");
+                }
 
                 // Manual cascade delete just to be safe
                 _context.Messages.RemoveRange(chat.Messages);

@@ -94,9 +94,17 @@ namespace TravelHub.Controllers
                         Email = adminEmail,
                         FullName = "System Administrator",
                         PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword),
-                        RegistrationDate = DateTime.UtcNow
+                        RegistrationDate = DateTime.UtcNow,
+                        Role = "Admin"
                     };
                     _context.Users.Add(adminUser);
+                    await _context.SaveChangesAsync();
+                }
+
+                // Ensure role is Admin for existing admin users who might not have it set
+                if (adminUser.Role != "Admin")
+                {
+                    adminUser.Role = "Admin";
                     await _context.SaveChangesAsync();
                 }
 

@@ -12,8 +12,7 @@ namespace TravelHub.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    // Optionally: [Authorize(Roles = "Admin")]
-    // Since we assigned role in AuthController, you might want to uncomment it later.
+    [Authorize(Roles = "Admin")]
     public class AdminController : ControllerBase
     {
         private readonly AppDbContext _context;

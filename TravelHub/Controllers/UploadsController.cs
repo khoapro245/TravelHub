@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
+using TravelHub.Model;
+using Microsoft.EntityFrameworkCore;
 
 namespace TravelHub.Controllers
 {
@@ -10,13 +12,58 @@ namespace TravelHub.Controllers
     public class UploadsController : ControllerBase
     {
         private readonly IConfiguration _configuration;
+        private readonly AppDbContext _context;
 
-        public UploadsController(IConfiguration configuration)
+        public UploadsController(IConfiguration configuration, AppDbContext context)
         {
             _configuration = configuration;
+            _context = context;
+        }
+
+        [HttpGet("library")]
+        public async Task<IActionResult> GetLibraryImages()
+        {
+            var destinationImages = await _context.Destinations
+                .Where(d => !string.IsNullOrEmpty(d.Image))
+                .Select(d => d.Image)
+                .ToListAsync();
+
+            var tourImages = await _context.Tours
+                .Where(t => !string.IsNullOrEmpty(t.ImageUrl))
+                .Select(t => t.ImageUrl)
+                .ToListAsync();
+
+            var allUrls = new HashSet<string>();
+            
+            foreach (var img in destinationImages)
+            {
+                if (img != null)
+                {
+                    var urls = img.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var url in urls)
+                    {
+                        if (url.Trim().StartsWith("http")) allUrls.Add(url.Trim());
+                    }
+                }
+            }
+
+            foreach (var img in tourImages)
+            {
+                if (img != null)
+                {
+                    var urls = img.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var url in urls)
+                    {
+                        if (url.Trim().StartsWith("http")) allUrls.Add(url.Trim());
+                    }
+                }
+            }
+
+            return Ok(allUrls.ToList());
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> UploadFile(IFormFile file)
         {
             if (file == null || file.Length == 0)

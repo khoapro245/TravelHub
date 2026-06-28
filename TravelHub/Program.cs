@@ -18,6 +18,7 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins("http://localhost:3000", 
                            "http://localhost:5173",
+                           "http://localhost:5174",
                            "https://travel-hub-tau.vercel.app")
               .AllowAnyHeader()
               .AllowAnyMethod()

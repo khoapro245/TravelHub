@@ -342,7 +342,7 @@ namespace TravelHub.Controllers
         }
 
         [HttpGet("bookings")]
-        [Authorize]
+        [Authorize(Roles = "Admin,TourGuide")]
         public async Task<IActionResult> GetAllBookings()
         {
             var bookings = await _context.TourBookings
@@ -352,13 +352,34 @@ namespace TravelHub.Controllers
         }
 
         [HttpPut("bookings/{id}/status")]
-        [Authorize]
+        [Authorize(Roles = "Admin,TourGuide")]
         public async Task<IActionResult> UpdateBookingStatus(int id, [FromBody] UpdateBookingStatusDto dto)
         {
             if (string.IsNullOrEmpty(dto.Status)) return BadRequest("Status is required");
             
-            var booking = await _context.TourBookings.FindAsync(id);
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int currentUserId))
+            {
+                return Unauthorized("User not found in token.");
+            }
+            
+            var booking = await _context.TourBookings.FirstOrDefaultAsync(b => b.BookingID == id);
             if (booking == null) return NotFound("Booking not found");
+
+            // Only allow Admins or the Provider of the Tour to update status
+            bool isAdmin = User.IsInRole("Admin");
+            bool isProvider = false;
+            
+            if (!isAdmin)
+            {
+                var tour = await _context.Tours.FindAsync(booking.TourID);
+                isProvider = tour != null && tour.ProviderID == currentUserId;
+            }
+            
+            if (!isAdmin && !isProvider)
+            {
+                 return Forbid("You do not have permission to update this booking.");
+            }
 
             booking.Status = dto.Status;
             await _context.SaveChangesAsync();
