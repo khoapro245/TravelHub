@@ -118,6 +118,9 @@ namespace TravelHub.Controllers
             if (user == null)
                 return Unauthorized("Invalid email or password.");
 
+            if (user.IsBlocked)
+                return StatusCode(403, "Your account has been blocked. Please contact support.");
+
             bool isPasswordValid = false;
             try
             {
@@ -158,6 +161,9 @@ namespace TravelHub.Controllers
 
             if (user == null || user.RefreshToken != tokenRequest.RefreshToken || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
                 return BadRequest("Invalid refresh token.");
+
+            if (user.IsBlocked)
+                return Unauthorized("Your account has been blocked.");
 
             var response = await GenerateAuthResponseAsync(user);
             
@@ -224,10 +230,16 @@ namespace TravelHub.Controllers
                     };
                     _context.Users.Add(user);
                 }
-                else if (string.IsNullOrEmpty(user.GoogleID))
+                else
                 {
-                    // Update existing user with GoogleID
-                    user.GoogleID = payload.Subject;
+                    if (user.IsBlocked)
+                        return StatusCode(403, "Your account has been blocked. Please contact support.");
+
+                    if (string.IsNullOrEmpty(user.GoogleID))
+                    {
+                        // Update existing user with GoogleID
+                        user.GoogleID = payload.Subject;
+                    }
                 }
 
                 var response = await GenerateAuthResponseAsync(user);

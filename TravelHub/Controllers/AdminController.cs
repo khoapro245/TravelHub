@@ -153,7 +153,9 @@ namespace TravelHub.Controllers
                     FullName = u.FullName,
                     AvatarURL = u.AvatarURL,
                     RegistrationDate = u.RegistrationDate,
-                    LastOnline = u.LastOnline
+                    LastOnline = u.LastOnline,
+                    IsBlocked = u.IsBlocked,
+                    Role = u.Role
                 })
                 .ToListAsync();
 
@@ -173,6 +175,96 @@ namespace TravelHub.Controllers
             };
 
             return Ok(response);
+        }
+
+        // Xem chi tiết một người dùng
+        [HttpGet("users/{id}")]
+        public async Task<IActionResult> GetUserDetail(int id)
+        {
+            var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.UserID == id);
+            if (user == null)
+                return NotFound(new { message = "User not found." });
+
+            var dto = new AdminUserDetailDto
+            {
+                UserID = user.UserID,
+                Username = user.Username,
+                Email = user.Email,
+                FullName = user.FullName,
+                AvatarURL = user.AvatarURL,
+                DateOfBirth = user.DateOfBirth,
+                StudentCode = user.StudentCode,
+                Gender = user.Gender,
+                Role = user.Role,
+                IsBlocked = user.IsBlocked,
+                IsPremium = user.IsPremium,
+                RegistrationDate = user.RegistrationDate,
+                LastOnline = user.LastOnline
+            };
+
+            return Ok(dto);
+        }
+
+        // Chỉnh sửa thông tin người dùng
+        [HttpPut("users/{id}")]
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] AdminUpdateUserRequest request)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserID == id);
+            if (user == null)
+                return NotFound(new { message = "User not found." });
+
+            if (request.FullName != null) user.FullName = request.FullName;
+            if (request.StudentCode != null) user.StudentCode = request.StudentCode;
+            if (request.Gender != null) user.Gender = request.Gender;
+
+            // Email phải là duy nhất
+            if (!string.IsNullOrWhiteSpace(request.Email) && request.Email != user.Email)
+            {
+                var emailTaken = await _context.Users.AnyAsync(u => u.Email == request.Email && u.UserID != id);
+                if (emailTaken)
+                    return BadRequest(new { message = "Email already exists." });
+                user.Email = request.Email;
+            }
+
+            // Chỉ chấp nhận các vai trò hợp lệ
+            if (!string.IsNullOrWhiteSpace(request.Role))
+            {
+                var validRoles = new[] { "Customer", "TourGuide", "Admin" };
+                if (!validRoles.Contains(request.Role))
+                    return BadRequest(new { message = "Invalid role." });
+                user.Role = request.Role;
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "User updated successfully." });
+        }
+
+        // Chặn / bỏ chặn người dùng. Khi bị chặn, xoá refresh token để buộc đăng xuất.
+        [HttpPut("users/{id}/block")]
+        public async Task<IActionResult> BlockUser(int id, [FromBody] AdminBlockUserRequest request)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserID == id);
+            if (user == null)
+                return NotFound(new { message = "User not found." });
+
+            if (user.Role == "Admin")
+                return BadRequest(new { message = "Cannot block an admin account." });
+
+            user.IsBlocked = request.IsBlocked;
+
+            if (request.IsBlocked)
+            {
+                // Vô hiệu hoá phiên hiện tại để người dùng bị đẩy ra ngay khi token làm mới
+                user.RefreshToken = null;
+                user.RefreshTokenExpiryTime = null;
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new
+            {
+                message = request.IsBlocked ? "User blocked successfully." : "User unblocked successfully.",
+                isBlocked = user.IsBlocked
+            });
         }
 
         private string GetOfflineDurationText(DateTime? lastOnline, DateTime now)
