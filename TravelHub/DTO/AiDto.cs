@@ -53,6 +53,7 @@ namespace TravelHub.DTO
         public int DestinationID { get; set; }
         public int Days { get; set; }
         public string? TravelStyle { get; set; }
+        public decimal BudgetVND { get; set; }
     }
 
     public class AiGenerateItineraryResponse

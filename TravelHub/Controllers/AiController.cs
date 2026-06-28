@@ -5,6 +5,7 @@ using TravelHub.DTO;
 using TravelHub.Model;
 using System.Text.Json;
 using System.Text;
+using System.Security.Claims;
 
 namespace TravelHub.Controllers
 {
@@ -36,13 +37,21 @@ namespace TravelHub.Controllers
             // 1. Quét Database trước
             var query = _context.Destinations.AsQueryable();
             
-            // Lấy địa điểm tìm kiếm (từ trường Destination hoặc Departure vì UI gửi qua Departure)
+            // Lấy địa điểm tìm kiếm (ưu tiên Destination, fallback sang Departure nếu UI cũ chưa cập nhật)
             var searchLocation = !string.IsNullOrWhiteSpace(request.Destination) ? request.Destination : request.Departure;
             
-            // Lọc theo CityProvince hoặc Name
+            Console.WriteLine($"[AiController] Received request - Destination: '{request.Destination}', Departure: '{request.Departure}'");
+            Console.WriteLine($"[AiController] Evaluated searchLocation: '{searchLocation}'");
+
+            // Lọc theo CityProvince hoặc Name (chỉ lấy Name nếu trùng khớp hoàn toàn để tránh lỗi gõ 'Hồ Chí Minh' lại ra 'Lăng Chủ tịch Hồ Chí Minh')
             if (!string.IsNullOrWhiteSpace(searchLocation))
             {
-                query = query.Where(d => d.CityProvince.Contains(searchLocation) || d.Name.Contains(searchLocation));
+                Console.WriteLine($"[AiController] Applying filter for searchLocation: {searchLocation}");
+                query = query.Where(d => d.CityProvince.Contains(searchLocation) || d.Name == searchLocation);
+            }
+            else
+            {
+                Console.WriteLine($"[AiController] searchLocation is EMPTY! Skipping name/province filter.");
             }
 
             // Lọc theo ngân sách (nếu user nhập > 0)
@@ -161,9 +170,10 @@ namespace TravelHub.Controllers
                 scoredItems.Add(new { Response = response, Score = score });
             }
 
-            // Sắp xếp theo Giá (từ cao xuống thấp)
+            // Sắp xếp ưu tiên Tour (Score cao nhất), sau đó sắp xếp theo Giá (từ cao xuống thấp)
             var finalSortedItems = scoredItems
-                .OrderByDescending(x => ((AiRecommendResponse)x.Response).EstimatedCostVND)
+                .OrderByDescending(x => (int)x.Score)
+                .ThenByDescending(x => ((AiRecommendResponse)x.Response).EstimatedCostVND)
                 .ToList();
 
             if (finalSortedItems.Any())
@@ -204,7 +214,7 @@ For each destination, provide the Name, CityProvince (or Country), a MatchReason
 Also provide a `distance` field which is the estimated distance (e.g. ""1200 km"") from {request.Departure} to the recommended destination.
 Also provide a `dailyCostBreakdown` object containing estimated daily cost ranges in VND (as strings, e.g., ""300.000đ""). 
 CRITICAL RULE 1: The sum of the dailyCostBreakdown values multiplied by the number of days ({request.Days}) MUST roughly equal the EstimatedCostVND.
-CRITICAL RULE 2: The EstimatedCostVND MUST strictly be within +/- 20% of the user's Budget ({request.BudgetVND} VND).
+{(request.BudgetVND > 0 ? $"CRITICAL RULE 2: The EstimatedCostVND MUST strictly be within +/- 20% of the user's Budget ({request.BudgetVND} VND)." : "")}
 CRITICAL RULE 3: If 'Destination to' is specified and not empty, you MUST ONLY recommend places within that specific destination.
 CRITICAL RULE 4: The recommendations MUST strictly feature the user's Interests ({request.Interests}).
 
@@ -284,9 +294,27 @@ Return the response exactly as a JSON array matching this structure, without any
             }
         }
 
+        [Authorize]
         [HttpPost("generate-itinerary")]
         public async Task<IActionResult> GenerateItinerary([FromBody] AiGenerateItineraryRequest request)
         {
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int userId))
+            {
+                return Unauthorized("Bạn cần đăng nhập để sử dụng tính năng này.");
+            }
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return Unauthorized("Tài khoản không tồn tại.");
+            }
+
+            if (user.Role != "Admin" && user.AiGenerationCount >= 5)
+            {
+                return StatusCode(403, "Bạn đã sử dụng hết 5 lượt tạo lịch trình bằng AI.");
+            }
+
             var apiKey = _configuration["Gemini:ApiKey"];
             if (string.IsNullOrEmpty(apiKey))
                 return StatusCode(500, "Gemini API Key is missing.");
@@ -298,6 +326,7 @@ Return the response exactly as a JSON array matching this structure, without any
             var prompt = $@"
 You are an expert travel planner. Create a day-by-day itinerary for a {request.Days}-day trip to {destination.Name}, {destination.CityProvince}.
 Travel style: {request.TravelStyle ?? "General"}.
+{(request.BudgetVND > 0 ? $"\nCRITICAL RULE: The user has a total budget of {request.BudgetVND} VND for this {request.Days}-day itinerary. You MUST strictly ensure that the sum of `estimatedCostVND` for ALL activities across ALL days is approximately equal to {request.BudgetVND} VND. Distribute this budget logically across meals, attractions, and activities." : "")}
 
 Return the response exactly as a JSON object matching this structure, without any markdown formatting or extra text:
 {{
@@ -332,6 +361,13 @@ Make sure to generate exactly {request.Days} days.";
             try
             {
                 var itinerary = JsonSerializer.Deserialize<AiGenerateItineraryResponse>(resultStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                
+                if (user.Role != "Admin")
+                {
+                    user.AiGenerationCount += 1;
+                    await _context.SaveChangesAsync();
+                }
+
                 return Ok(itinerary);
             }
             catch (Exception ex)

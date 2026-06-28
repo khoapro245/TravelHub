@@ -53,6 +53,8 @@ namespace TravelHub.Model
         // Khi bị chặn, người dùng không thể đăng nhập hoặc truy cập các API yêu cầu xác thực
         public bool IsBlocked { get; set; } = false;
 
+        public int AiGenerationCount { get; set; } = 0;
+
         // Quan hệ 1 - 1
         public virtual UserPreference? UserPreference { get; set; }
         public virtual TourGuideProfile? TourGuideProfile { get; set; }

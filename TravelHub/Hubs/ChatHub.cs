@@ -33,8 +33,8 @@ namespace TravelHub.Hubs
             int userId = GetCurrentUserId();
 
             // Verify the user is a participant
-            var isParticipant = await _context.ChatParticipants
-                .AnyAsync(cp => cp.ChatID == conversationId && cp.UserID == userId);
+            var participants = await _context.ChatParticipants.Where(cp => cp.ChatID == conversationId).ToListAsync();
+            var isParticipant = participants.Any(cp => cp.UserID == userId);
 
             if (isParticipant)
             {
@@ -43,6 +43,7 @@ namespace TravelHub.Hubs
             }
             else
             {
+                Console.WriteLine($"[JoinChat Error] User {userId} is NOT a participant in Chat {conversationId}. Current Participants: {string.Join(", ", participants.Select(p => p.UserID))}");
                 throw new HubException("You are not a participant in this chat.");
             }
         }
