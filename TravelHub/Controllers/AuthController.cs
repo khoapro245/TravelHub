@@ -119,7 +119,7 @@ namespace TravelHub.Controllers
                 return Unauthorized("Invalid email or password.");
 
             if (user.IsBlocked)
-                return StatusCode(403, "Your account has been blocked. Please contact support.");
+                return StatusCode(403, "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ bộ phận hỗ trợ.");
 
             bool isPasswordValid = false;
             try
@@ -178,11 +178,11 @@ namespace TravelHub.Controllers
         {
             var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!int.TryParse(userIdString, out int userId))
-                return BadRequest("User not found.");
+                return BadRequest("Không tìm thấy người dùng.");
 
             var user = await _context.Users.FindAsync(userId);
             if (user == null)
-                return NotFound("User not found.");
+                return NotFound("Không tìm thấy người dùng.");
 
             user.RefreshToken = null;
             user.RefreshTokenExpiryTime = null;
@@ -260,7 +260,7 @@ namespace TravelHub.Controllers
             var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == request.Email);
             if (user == null)
             {
-                return NotFound("Email not found.");
+                return NotFound("Không tìm thấy email.");
             }
 
             // Generate 6-digit random password securely
@@ -295,11 +295,11 @@ namespace TravelHub.Controllers
         {
             var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!int.TryParse(userIdString, out int userId))
-                return BadRequest("User not found.");
+                return BadRequest("Không tìm thấy người dùng.");
 
             var user = await _context.Users.FindAsync(userId);
             if (user == null)
-                return NotFound("User not found.");
+                return NotFound("Không tìm thấy người dùng.");
 
             if (!BCrypt.Net.BCrypt.Verify(request.OldPassword, user.PasswordHash))
                 return BadRequest("Incorrect old password.");
