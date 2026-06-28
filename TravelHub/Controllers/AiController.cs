@@ -379,7 +379,8 @@ Make sure to generate exactly {request.Days} days.";
 
         private async Task<string> CallGeminiApi(string prompt, string apiKey)
         {
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
+            var baseUrl = _configuration["Gemini:BaseUrl"] ?? "https://generativelanguage.googleapis.com";
+            var url = $"{baseUrl.TrimEnd('/')}/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
             
             var requestBody = new
             {
