@@ -421,7 +421,9 @@ Return the response exactly as a JSON array matching this structure, without any
                                 .FirstOrDefaultAsync(d => d.Image != null && 
                                     (d.Name == rec.Name || 
                                      (d.Name.Length >= 4 && fullName.Contains(d.Name)) || 
-                                     (fullName.Length >= 4 && d.Name.Contains(fullName))));
+                                     (fullName.Length >= 4 && d.Name.Contains(fullName)) ||
+                                     (!string.IsNullOrEmpty(searchLocation) && searchLocation.Length >= 3 && fullName.Contains(searchLocation) && d.Name.Contains(searchLocation))
+                                    ));
                             if (existingDestWithImage != null)
                             {
                                 newDest.Image = existingDestWithImage.Image;
