@@ -77,7 +77,6 @@ namespace TravelHub.Controllers
                 var newUsersInMonth = recentUsersData.Count(u => u.RegistrationDate >= monthStart && u.RegistrationDate < monthEnd);
                 runningTotal += newUsersInMonth;
                 
-                var activeUsers = recentUsersData.Count(u => u.RegistrationDate < monthEnd && u.LastOnline >= monthStart);
                 if (i == 5) activeUsers += (int)(oldUsersCount * 0.8); // Estimate active from old users
 
                 userGrowth.Add(new UserGrowthData
