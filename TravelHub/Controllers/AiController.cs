@@ -417,17 +417,23 @@ Return the response exactly as a JSON array matching this structure, without any
 
                             // Tìm bất kỳ địa điểm nào có tên trùng khớp tuyệt đối hoặc chứa từ khóa tương đồng (độ dài >= 4 ký tự) đã có ảnh
                             var fullName = rec.Name + " " + rec.CityProvince;
-                            var existingDestWithImage = await _context.Destinations
-                                .FirstOrDefaultAsync(d => d.Image != null && 
+                            var matchingImages = await _context.Destinations
+                                .Where(d => d.Image != null && 
                                     (d.Name == rec.Name || 
                                      (d.Name.Length >= 4 && fullName.Contains(d.Name)) || 
                                      (fullName.Length >= 4 && d.Name.Contains(fullName)) ||
                                      (!string.IsNullOrEmpty(searchLocation) && searchLocation.Length >= 3 && fullName.Contains(searchLocation) && d.Name.Contains(searchLocation))
-                                    ));
-                            if (existingDestWithImage != null)
+                                    ))
+                                .Select(d => d.Image)
+                                .Distinct()
+                                .ToListAsync();
+
+                            if (matchingImages.Any())
                             {
-                                newDest.Image = existingDestWithImage.Image;
-                                rec.ImageUrl = existingDestWithImage.Image;
+                                var random = new Random();
+                                var randomImage = matchingImages[random.Next(matchingImages.Count)];
+                                newDest.Image = randomImage;
+                                rec.ImageUrl = randomImage;
                             }
 
                             _context.Destinations.Add(newDest);
