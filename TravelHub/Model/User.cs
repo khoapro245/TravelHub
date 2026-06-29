@@ -54,6 +54,11 @@ namespace TravelHub.Model
         public bool IsBlocked { get; set; } = false;
 
         public int AiGenerationCount { get; set; } = 0;
+        public DateTime? LastAiGenerationDate { get; set; }
+        public int TravelPoints { get; set; } = 0;
+
+        [StringLength(20)]
+        public string? UserCode { get; set; }
 
         // Quan hệ 1 - 1
         public virtual UserPreference? UserPreference { get; set; }

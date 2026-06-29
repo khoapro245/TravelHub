@@ -58,13 +58,20 @@ namespace TravelHub.Controllers
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
                 return BadRequest("Email already exists.");
 
+            string userCode;
+            do
+            {
+                userCode = GenerateRandomUserCode();
+            } while (await _context.Users.AnyAsync(u => u.UserCode == userCode));
+
             var user = new User
             {
                 Username = request.Username,
                 Email = request.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 FullName = request.FullName,
-                StudentCode = request.StudentCode
+                StudentCode = request.StudentCode,
+                UserCode = userCode
             };
 
             _context.Users.Add(user);
@@ -308,6 +315,18 @@ namespace TravelHub.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { Message = "Password changed successfully." });
+        }
+
+        private string GenerateRandomUserCode()
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var random = new Random();
+            var result = new char[6];
+            for (int i = 0; i < 6; i++)
+            {
+                result[i] = chars[random.Next(chars.Length)];
+            }
+            return new string(result);
         }
     }
 }

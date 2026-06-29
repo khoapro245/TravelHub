@@ -20,6 +20,7 @@ namespace TravelHub.DTO
         public string? FavoriteActivities { get; set; }
         public int? MaxDurationDays { get; set; }
         public string? PreferredDestinations { get; set; }
+        public int TravelPoints { get; set; }
     }
 
     public class UpdateProfileRequest

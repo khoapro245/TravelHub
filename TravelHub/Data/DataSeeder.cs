@@ -40,35 +40,36 @@ namespace TravelHub.Data
                 return;
             }
 
+            // Lấy toàn bộ danh sách điểm đến hiện tại trong DB về bộ nhớ để tránh việc gọi AnyAsync/FirstOrDefaultAsync trong vòng lặp.
+            var dbDestinations = await context.Destinations.ToListAsync();
+            var dbDestDict = dbDestinations
+                .GroupBy(d => new { Name = d.Name.Trim().ToLower(), City = d.CityProvince.Trim().ToLower() })
+                .ToDictionary(g => g.Key, g => g.First());
+
             int addedCount = 0;
 
             foreach (var dest in destinations)
             {
-                bool exists = await context.Destinations.AnyAsync(d => d.Name == dest.Name && d.CityProvince == dest.CityProvince);
-                if (!exists)
+                var key = new { Name = dest.Name.Trim().ToLower(), City = dest.CityProvince.Trim().ToLower() };
+                if (!dbDestDict.TryGetValue(key, out var existing))
                 {
                     context.Destinations.Add(dest);
                     addedCount++;
+                    dbDestDict[key] = dest;
                 }
                 else
                 {
                     // Cập nhật giá cho các dòng đã bị insert với giá NULL ở lần trước
-                    var existing = await context.Destinations.FirstOrDefaultAsync(d => d.Name == dest.Name && d.CityProvince == dest.CityProvince);
-                    if (existing != null)
+                    bool isUpdated = false;
+                    if (existing.EntranceFee == null && dest.EntranceFee != null) { existing.EntranceFee = dest.EntranceFee; isUpdated = true; }
+                    if (existing.AccommodationCost == null && dest.AccommodationCost != null) { existing.AccommodationCost = dest.AccommodationCost; isUpdated = true; }
+                    if (existing.TotalTourCost == null && dest.TotalTourCost != null) { existing.TotalTourCost = dest.TotalTourCost; isUpdated = true; }
+                    if (existing.TourPricePerPerson == null && dest.TourPricePerPerson != null) { existing.TourPricePerPerson = dest.TourPricePerPerson; isUpdated = true; }
+                    
+                    if (isUpdated) 
                     {
-                        bool isUpdated = false;
-                        if (existing.EntranceFee == null && dest.EntranceFee != null) { existing.EntranceFee = dest.EntranceFee; isUpdated = true; }
-                        if (existing.AccommodationCost == null && dest.AccommodationCost != null) { existing.AccommodationCost = dest.AccommodationCost; isUpdated = true; }
-                        if (existing.TotalTourCost == null && dest.TotalTourCost != null) { existing.TotalTourCost = dest.TotalTourCost; isUpdated = true; }
-                        if (existing.TourPricePerPerson == null && dest.TourPricePerPerson != null) { existing.TourPricePerPerson = dest.TourPricePerPerson; isUpdated = true; }
-                        
-
-                        
-                        if (isUpdated) 
-                        {
-                            context.Destinations.Update(existing);
-                            addedCount++;
-                        }
+                        context.Destinations.Update(existing);
+                        addedCount++;
                     }
                 }
             }
@@ -76,7 +77,7 @@ namespace TravelHub.Data
             if (addedCount > 0)
             {
                 await context.SaveChangesAsync();
-                Console.WriteLine($"[DataSeeder] Seeded {addedCount} new destinations.");
+                Console.WriteLine($"[DataSeeder] Seeded/Updated {addedCount} destinations.");
             }
             else
             {
@@ -119,6 +120,41 @@ namespace TravelHub.Data
                 await context.SaveChangesAsync();
 
                 Console.WriteLine($"[DataSeeder] Seeded default Tour Guide: {guideEmail}");
+            }
+        }
+
+        public static async Task SeedUserCodesAsync(AppDbContext context)
+        {
+            var usersWithoutCode = await context.Users.Where(u => string.IsNullOrEmpty(u.UserCode)).ToListAsync();
+            if (usersWithoutCode.Any())
+            {
+                var existingCodes = await context.Users
+                    .Where(u => !string.IsNullOrEmpty(u.UserCode))
+                    .Select(u => u.UserCode!)
+                    .ToListAsync();
+                var codeSet = new HashSet<string>(existingCodes);
+
+                var random = new Random();
+                const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+                
+                foreach (var user in usersWithoutCode)
+                {
+                    string userCode;
+                    do
+                    {
+                        var result = new char[6];
+                        for (int i = 0; i < 6; i++)
+                        {
+                            result[i] = chars[random.Next(chars.Length)];
+                        }
+                        userCode = new string(result);
+                    } while (codeSet.Contains(userCode));
+                    
+                    user.UserCode = userCode;
+                    codeSet.Add(userCode);
+                }
+                await context.SaveChangesAsync();
+                Console.WriteLine($"[DataSeeder] Seeded UserCode for {usersWithoutCode.Count} users.");
             }
         }
     }

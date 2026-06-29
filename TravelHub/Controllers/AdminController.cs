@@ -133,12 +133,24 @@ namespace TravelHub.Controllers
         }
 
         [HttpGet("users")]
-        public async Task<IActionResult> GetUsers([FromQuery] int page = 1, [FromQuery] int pageSize = 30, [FromQuery] string? offlineFilter = null)
+        public async Task<IActionResult> GetUsers([FromQuery] int page = 1, [FromQuery] int pageSize = 30, [FromQuery] string? offlineFilter = null, [FromQuery] string? search = null)
         {
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 30;
 
             var query = _context.Users.AsQueryable();
+
+            // Apply search filter (Username, Email, FullName, UserCode)
+            if (!string.IsNullOrEmpty(search))
+            {
+                var lowerSearch = search.Trim().ToLower();
+                query = query.Where(u => 
+                    u.Username.ToLower().Contains(lowerSearch) || 
+                    (u.Email != null && u.Email.ToLower().Contains(lowerSearch)) || 
+                    (u.FullName != null && u.FullName.ToLower().Contains(lowerSearch)) || 
+                    (u.UserCode != null && u.UserCode.ToLower().Contains(lowerSearch))
+                );
+            }
 
             // Apply filter based on LastOnline
             var now = DateTime.UtcNow;
@@ -175,7 +187,9 @@ namespace TravelHub.Controllers
                     RegistrationDate = u.RegistrationDate,
                     LastOnline = u.LastOnline,
                     IsBlocked = u.IsBlocked,
-                    Role = u.Role
+                    Role = u.Role,
+                    UserCode = u.UserCode,
+                    TravelPoints = u.TravelPoints
                 })
                 .ToListAsync();
 
@@ -418,5 +432,23 @@ namespace TravelHub.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { Message = "Report status updated successfully." });
         }
+
+        [HttpPut("users/{userId}/points")]
+        public async Task<IActionResult> UpdateUserPoints(int userId, [FromBody] UpdateUserPointsRequest request)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                return NotFound("User not found.");
+
+            user.TravelPoints = request.TravelPoints;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "User points updated successfully.", TravelPoints = user.TravelPoints });
+        }
+    }
+
+    public class UpdateUserPointsRequest
+    {
+        public int TravelPoints { get; set; }
     }
 }

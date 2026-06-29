@@ -11,7 +11,7 @@ namespace TravelHub.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    // [Authorize]
+    [Authorize]
     public class AiController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -27,9 +27,87 @@ namespace TravelHub.Controllers
             _logger = logger;
         }
 
+        private async Task<(bool allowed, User? user, IActionResult? errorResult)> CheckDailyLimitAsync()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                return (false, null, Unauthorized("Bạn cần đăng nhập để sử dụng tính năng này."));
+            }
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return (false, null, Unauthorized("Tài khoản không tồn tại."));
+            }
+
+            if (user.Role != "Admin")
+            {
+                var today = DateTime.UtcNow.Date;
+                if (user.LastAiGenerationDate == null || user.LastAiGenerationDate.Value.Date != today)
+                {
+                    user.AiGenerationCount = 0;
+                    user.LastAiGenerationDate = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                }
+
+                if (user.AiGenerationCount >= 3)
+                {
+                    return (false, user, StatusCode(403, "Bạn đã hết lượt sử dụng AI hôm nay (tối đa 3 lượt/ngày)."));
+                }
+            }
+
+            return (true, user, null);
+        }
+
+        [HttpGet("limit")]
+        public async Task<IActionResult> GetAiLimit()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized("Bạn cần đăng nhập để sử dụng tính năng này.");
+            }
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return Unauthorized("Tài khoản không tồn tại.");
+            }
+
+            if (user.Role != "Admin")
+            {
+                var today = DateTime.UtcNow.Date;
+                if (user.LastAiGenerationDate == null || user.LastAiGenerationDate.Value.Date != today)
+                {
+                    user.AiGenerationCount = 0;
+                    user.LastAiGenerationDate = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            var remaining = user.Role == "Admin" ? 3 : Math.Max(0, 3 - user.AiGenerationCount);
+
+            return Ok(new
+            {
+                used = user.Role == "Admin" ? 0 : user.AiGenerationCount,
+                limit = 3,
+                remaining = remaining
+            });
+        }
+
         [HttpPost("recommend")]
         public async Task<IActionResult> RecommendDestinations([FromBody] AiRecommendRequest request)
         {
+            request.PageSize = 4;
+
+            var limitCheck = await CheckDailyLimitAsync();
+            if (!limitCheck.allowed)
+            {
+                return limitCheck.errorResult!;
+            }
+            var user = limitCheck.user!;
+
             var apiKey = _configuration["Gemini:ApiKey"];
             if (string.IsNullOrEmpty(apiKey))
                 return StatusCode(500, "Gemini API Key is missing.");
@@ -185,6 +263,13 @@ namespace TravelHub.Controllers
                     .Select(x => (AiRecommendResponse)x.Response)
                     .ToList();
 
+                if (user.Role != "Admin")
+                {
+                    user.AiGenerationCount += 1;
+                    user.LastAiGenerationDate = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                }
+
                 return Ok(new PaginatedAiResponse
                 {
                     Items = pagedItems,
@@ -275,6 +360,13 @@ Return the response exactly as a JSON array matching this structure, without any
                         }
                     }
 
+                    if (user.Role != "Admin")
+                    {
+                        user.AiGenerationCount += 1;
+                        user.LastAiGenerationDate = DateTime.UtcNow;
+                        await _context.SaveChangesAsync();
+                    }
+
                     // Wrap the AI results in PaginatedAiResponse
                     return Ok(new PaginatedAiResponse
                     {
@@ -298,22 +390,12 @@ Return the response exactly as a JSON array matching this structure, without any
         [HttpPost("generate-itinerary")]
         public async Task<IActionResult> GenerateItinerary([FromBody] AiGenerateItineraryRequest request)
         {
-            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int userId))
+            var limitCheck = await CheckDailyLimitAsync();
+            if (!limitCheck.allowed)
             {
-                return Unauthorized("Bạn cần đăng nhập để sử dụng tính năng này.");
+                return limitCheck.errorResult!;
             }
-
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-            {
-                return Unauthorized("Tài khoản không tồn tại.");
-            }
-
-            if (user.Role != "Admin" && user.AiGenerationCount >= 5)
-            {
-                return StatusCode(403, "Bạn đã sử dụng hết 5 lượt tạo lịch trình bằng AI.");
-            }
+            var user = limitCheck.user!;
 
             var apiKey = _configuration["Gemini:ApiKey"];
             if (string.IsNullOrEmpty(apiKey))
@@ -365,6 +447,7 @@ Make sure to generate exactly {request.Days} days.";
                 if (user.Role != "Admin")
                 {
                     user.AiGenerationCount += 1;
+                    user.LastAiGenerationDate = DateTime.UtcNow;
                     await _context.SaveChangesAsync();
                 }
 

@@ -140,6 +140,9 @@ using (var scope = app.Services.CreateScope())
 
         // Seed default Tour Guide
         await TravelHub.Data.DataSeeder.SeedDefaultTourGuideAsync(dbContext);
+
+        // Seed UserCodes for existing users
+        await TravelHub.Data.DataSeeder.SeedUserCodesAsync(dbContext);
     }
     catch (Exception ex)
     {

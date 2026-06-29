@@ -14,6 +14,8 @@ namespace TravelHub.DTO
         public string OfflineDurationText { get; set; } = string.Empty;
         public bool IsBlocked { get; set; }
         public string Role { get; set; } = "Customer";
+        public string? UserCode { get; set; }
+        public int TravelPoints { get; set; }
     }
 
     public class AdminUserResponse
@@ -41,6 +43,8 @@ namespace TravelHub.DTO
         public bool IsPremium { get; set; }
         public DateTime RegistrationDate { get; set; }
         public DateTime? LastOnline { get; set; }
+        public string? UserCode { get; set; }
+        public int TravelPoints { get; set; }
     }
 
     // Body cho thao tác chỉnh sửa người dùng của Admin

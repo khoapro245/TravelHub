@@ -62,7 +62,8 @@ namespace TravelHub.Controllers
                 TravelStyle = user.UserPreference?.TravelStyle,
                 FavoriteActivities = user.UserPreference?.FavoriteActivities,
                 MaxDurationDays = user.UserPreference?.MaxDurationDays,
-                PreferredDestinations = user.UserPreference?.PreferredDestinations
+                PreferredDestinations = user.UserPreference?.PreferredDestinations,
+                TravelPoints = user.TravelPoints
             };
 
             return Ok(profile);
