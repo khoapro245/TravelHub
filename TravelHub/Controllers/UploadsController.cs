@@ -42,7 +42,11 @@ namespace TravelHub.Controllers
                     var urls = img.Split(',', StringSplitOptions.RemoveEmptyEntries);
                     foreach (var url in urls)
                     {
-                        if (url.Trim().StartsWith("http")) allUrls.Add(url.Trim());
+                        var trimmedUrl = url.Trim();
+                        if (trimmedUrl.StartsWith("http") && trimmedUrl.Contains("cloudinary", StringComparison.OrdinalIgnoreCase))
+                        {
+                            allUrls.Add(trimmedUrl);
+                        }
                     }
                 }
             }
@@ -54,7 +58,11 @@ namespace TravelHub.Controllers
                     var urls = img.Split(',', StringSplitOptions.RemoveEmptyEntries);
                     foreach (var url in urls)
                     {
-                        if (url.Trim().StartsWith("http")) allUrls.Add(url.Trim());
+                        var trimmedUrl = url.Trim();
+                        if (trimmedUrl.StartsWith("http") && trimmedUrl.Contains("cloudinary", StringComparison.OrdinalIgnoreCase))
+                        {
+                            allUrls.Add(trimmedUrl);
+                        }
                     }
                 }
             }
