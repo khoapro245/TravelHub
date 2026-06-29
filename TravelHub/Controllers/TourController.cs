@@ -243,17 +243,37 @@ namespace TravelHub.Controllers
         [HttpGet("destinations")]
         public async Task<IActionResult> GetPopularDestinations()
         {
-            var dbDestinations = await _context.Destinations
-                .Select(d => d.CityProvince)
-                .Distinct()
-                .ToListAsync();
-
-            var tourDestinations = await _context.Tours
+            var rawDestinations = await _context.Tours
+                .Where(t => t.Destination != null && t.Destination != "")
                 .Select(t => t.Destination)
                 .Distinct()
                 .ToListAsync();
 
-            var destinations = dbDestinations.Concat(tourDestinations).Distinct().Take(20).ToList();
+            var list = new List<string>();
+            foreach (var raw in rawDestinations)
+            {
+                if (string.IsNullOrWhiteSpace(raw)) continue;
+
+                // Thêm chuỗi gốc đã được trim
+                var trimmedRaw = raw.Trim();
+                if (!list.Contains(trimmedRaw, StringComparer.OrdinalIgnoreCase))
+                {
+                    list.Add(trimmedRaw);
+                }
+
+                // Tách theo các ký tự phân tách phổ biến
+                var parts = raw.Split(new[] { '-', ',', ';', '/' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var part in parts)
+                {
+                    var trimmedPart = part.Trim();
+                    if (!string.IsNullOrWhiteSpace(trimmedPart) && !list.Contains(trimmedPart, StringComparer.OrdinalIgnoreCase))
+                    {
+                        list.Add(trimmedPart);
+                    }
+                }
+            }
+
+            var destinations = list.OrderBy(d => d).Take(50).ToList();
 
             if (!destinations.Any())
             {
