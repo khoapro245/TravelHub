@@ -46,6 +46,12 @@ namespace TravelHub.Controllers
             };
 
             // 2. Generate User Growth Data (Last 6 months)
+            // Fetch only the two date columns ONCE and compute every month in memory,
+            // instead of running 3 DB round-trips per month (18 queries -> 1 query).
+            var userDates = await _context.Users
+                .Select(u => new { u.RegistrationDate, u.LastOnline })
+                .ToListAsync();
+
             var userGrowth = new List<UserGrowthData>();
             var sixMonthsAgo = now.AddMonths(-5);
             var startDate = new DateTime(sixMonthsAgo.Year, sixMonthsAgo.Month, 1);
@@ -64,6 +70,9 @@ namespace TravelHub.Controllers
             {
                 var monthStart = new DateTime(now.Year, now.Month, 1).AddMonths(-i);
                 var monthEnd = monthStart.AddMonths(1);
+
+                var totalUsersUpToMonth = userDates.Count(u => u.RegistrationDate < monthEnd);
+                var activeUsers = userDates.Count(u => u.RegistrationDate < monthEnd && u.LastOnline >= monthStart);
                 
                 var newUsersInMonth = recentUsersData.Count(u => u.RegistrationDate >= monthStart && u.RegistrationDate < monthEnd);
                 runningTotal += newUsersInMonth;
