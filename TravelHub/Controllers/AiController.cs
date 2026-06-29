@@ -341,19 +341,78 @@ Return the response exactly as a JSON array matching this structure, without any
                     foreach (var rec in recommendations)
                     {
                         var existingDest = await _context.Destinations.FirstOrDefaultAsync(d => d.Name == rec.Name);
+                        
+                        // Thu thập các tag từ khóa người dùng nhập vào
+                        var keysList = new List<string>();
+                        if (!string.IsNullOrEmpty(request.Interests)) keysList.Add(request.Interests);
+                        if (!string.IsNullOrEmpty(request.TravelGroup)) keysList.Add(request.TravelGroup);
+                        if (!string.IsNullOrEmpty(request.BudgetStyle)) keysList.Add(request.BudgetStyle);
+                        if (!string.IsNullOrEmpty(request.DestinationType)) keysList.Add(request.DestinationType);
+                        if (!string.IsNullOrEmpty(request.MainTravelGoal)) keysList.Add(request.MainTravelGoal);
+                        if (!string.IsNullOrEmpty(request.PreferredWeather)) keysList.Add(request.PreferredWeather);
+                        if (!string.IsNullOrEmpty(request.AccommodationType)) keysList.Add(request.AccommodationType);
+                        var newKeys = keysList.Where(k => !string.IsNullOrWhiteSpace(k)).ToList();
+
                         if (existingDest != null)
                         {
                             rec.DestinationID = existingDest.DestinationID;
                             rec.ImageUrl = existingDest.Image ?? string.Empty;
+
+                            if (newKeys.Any())
+                            {
+                                var currentKeys = string.IsNullOrEmpty(existingDest.KeyMain)
+                                    ? new List<string>()
+                                    : existingDest.KeyMain.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+                                bool updated = false;
+                                foreach (var nk in newKeys)
+                                {
+                                    var tags = nk.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                                    foreach (var tag in tags)
+                                    {
+                                        if (!currentKeys.Contains(tag, StringComparer.OrdinalIgnoreCase))
+                                        {
+                                            currentKeys.Add(tag);
+                                            updated = true;
+                                        }
+                                    }
+                                }
+
+                                if (updated)
+                                {
+                                    existingDest.KeyMain = string.Join(", ", currentKeys);
+                                    _context.Destinations.Update(existingDest);
+                                    await _context.SaveChangesAsync();
+                                }
+                            }
                         }
                         else
                         {
+                            var keyMainValue = "";
+                            if (newKeys.Any())
+                            {
+                                var uniqueTags = new List<string>();
+                                foreach (var nk in newKeys)
+                                {
+                                    var tags = nk.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                                    foreach (var tag in tags)
+                                    {
+                                        if (!uniqueTags.Contains(tag, StringComparer.OrdinalIgnoreCase))
+                                        {
+                                            uniqueTags.Add(tag);
+                                        }
+                                    }
+                                }
+                                keyMainValue = string.Join(", ", uniqueTags);
+                            }
+
                             var newDest = new Destination
                             {
                                 Name = rec.Name,
                                 CityProvince = rec.CityProvince,
                                 Description = "AI Suggested Destination",
-                                TotalTourCost = rec.EstimatedCostVND
+                                TotalTourCost = rec.EstimatedCostVND,
+                                KeyMain = string.IsNullOrEmpty(keyMainValue) ? null : keyMainValue
                             };
 
                             // Tìm bất kỳ địa điểm nào có tên trùng khớp tuyệt đối hoặc chứa từ khóa tương đồng (độ dài >= 4 ký tự) đã có ảnh
