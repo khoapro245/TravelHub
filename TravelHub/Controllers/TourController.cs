@@ -283,6 +283,65 @@ namespace TravelHub.Controllers
             return Ok(destinations);
         }
 
+        [HttpGet("departures")]
+        public async Task<IActionResult> GetDepartureLocations()
+        {
+            var rawDepartures = await _context.Tours
+                .Where(t => !string.IsNullOrEmpty(t.DepartureLocation))
+                .Select(t => t.DepartureLocation)
+                .Distinct()
+                .ToListAsync();
+
+            var list = new List<string>();
+            foreach (var raw in rawDepartures)
+            {
+                if (string.IsNullOrWhiteSpace(raw)) continue;
+
+                var trimmedRaw = raw.Trim();
+                if (!list.Contains(trimmedRaw, StringComparer.OrdinalIgnoreCase))
+                {
+                    list.Add(trimmedRaw);
+                }
+
+                var parts = raw.Split(new[] { '-', ',', ';', '/' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var part in parts)
+                {
+                    var trimmedPart = part.Trim();
+                    if (!string.IsNullOrWhiteSpace(trimmedPart) && !list.Contains(trimmedPart, StringComparer.OrdinalIgnoreCase))
+                    {
+                        list.Add(trimmedPart);
+                    }
+                }
+            }
+
+            var defaultDepartures = new List<string> { "Thanh Hóa", "Hà Nội", "Đà Nẵng", "Cần Thơ", "Hải Phòng", "Hồ Chí Minh" };
+            foreach (var def in defaultDepartures)
+            {
+                if (!list.Contains(def, StringComparer.OrdinalIgnoreCase))
+                {
+                    list.Add(def);
+                }
+            }
+
+            var departures = list.OrderBy(d => d).Take(50).ToList();
+            return Ok(departures);
+        }
+
+        [HttpGet("guide-tour-dates")]
+        public async Task<IActionResult> GetGuideTourDates()
+        {
+            var dates = await _context.Tours
+                .Where(t => t.ProviderID != null && t.DepartureDate >= DateTime.Today)
+                .Select(t => t.DepartureDate.Date)
+                .Distinct()
+                .ToListAsync();
+
+            var dateStrings = dates.Select(d => d.ToString("yyyy-MM-dd")).ToList();
+            return Ok(dateStrings);
+        }
+
+
+
         [HttpGet("recent")]
         public async Task<IActionResult> GetRecentTours()
         {
