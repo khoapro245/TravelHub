@@ -196,7 +196,7 @@ namespace TravelHub.Controllers
             try
             {
                 int senderId = GetCurrentUserId();
-                Chat chat = null;
+                Chat? chat = null;
 
                 if (request.ChatID.HasValue)
                 {

@@ -11,19 +11,19 @@ namespace TravelHub.Model
 
         public int UserID { get; set; }
         [ForeignKey("UserID")]
-        public User User { get; set; }
+        public User User { get; set; } = null!;
 
         public int TourID { get; set; }
 
         // Tour Snapshot data
-        public string TourTitle { get; set; }
-        public string Destination { get; set; }
+        public string TourTitle { get; set; } = string.Empty;
+        public string Destination { get; set; } = string.Empty;
         public string? ImageUrl { get; set; }
         public DateTime DepartureDate { get; set; }
 
         // Booking details
-        public string FullName { get; set; }
-        public string Phone { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
         public string? Email { get; set; }
         public string? Notes { get; set; }
         public int Guests { get; set; }
@@ -32,6 +32,6 @@ namespace TravelHub.Model
         public decimal TotalPriceVND { get; set; }
 
         public DateTime BookingDate { get; set; }
-        public string Status { get; set; } // Pending, Confirmed, Cancelled
+        public string Status { get; set; } = string.Empty; // Pending, Confirmed, Cancelled
     }
 }
