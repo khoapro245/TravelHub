@@ -52,7 +52,7 @@ namespace TravelHub.Hubs
         public async Task SendMessage(int? receiverId, int? chatId, string content)
         {
             int senderId = GetCurrentUserId();
-            Chat chat = null;
+            Chat? chat = null;
 
             if (chatId.HasValue)
             {

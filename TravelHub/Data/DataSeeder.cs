@@ -25,7 +25,7 @@ namespace TravelHub.Data
 
             // Xóa dữ liệu lỗi do string replace sai từ các lần chạy trước
             var corruptedDestinations = await context.Destinations
-                .Where(d => d.CityProvince.Contains("000") || d.Name.Contains("000") || d.Description.Contains("000"))
+                .Where(d => (d.CityProvince != null && d.CityProvince.Contains("000")) || (d.Name != null && d.Name.Contains("000")) || (d.Description != null && d.Description.Contains("000")))
                 .ToListAsync();
             
             if (corruptedDestinations.Any())

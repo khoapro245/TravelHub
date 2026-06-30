@@ -71,9 +71,6 @@ namespace TravelHub.Controllers
                 var monthStart = new DateTime(now.Year, now.Month, 1).AddMonths(-i);
                 var monthEnd = monthStart.AddMonths(1);
 
-                var totalUsersUpToMonth = userDates.Count(u => u.RegistrationDate < monthEnd);
-                var activeUsers = userDates.Count(u => u.RegistrationDate < monthEnd && u.LastOnline >= monthStart);
-                
                 var newUsersInMonth = recentUsersData.Count(u => u.RegistrationDate >= monthStart && u.RegistrationDate < monthEnd);
                 runningTotal += newUsersInMonth;
                 
