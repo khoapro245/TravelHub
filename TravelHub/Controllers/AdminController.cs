@@ -53,6 +53,19 @@ namespace TravelHub.Controllers
                 .ToListAsync();
 
             var userGrowth = new List<UserGrowthData>();
+            var sixMonthsAgo = now.AddMonths(-5);
+            var startDate = new DateTime(sixMonthsAgo.Year, sixMonthsAgo.Month, 1);
+            
+            // Lấy toàn bộ user từ 6 tháng trước vào RAM (vì số lượng user mới trong 6 tháng thường không quá lớn để gây tràn RAM)
+            // Nếu data lớn, ta nên dùng GroupBy SQL, nhưng SQLite/SQLServer có syntax khác nhau nên lấy về xử lý RAM là an toàn nhất.
+            var recentUsersData = await _context.Users
+                .Where(u => u.RegistrationDate >= startDate)
+                .Select(u => new { u.RegistrationDate, u.LastOnline })
+                .ToListAsync();
+
+            var oldUsersCount = await _context.Users.CountAsync(u => u.RegistrationDate < startDate);
+            int runningTotal = oldUsersCount;
+
             for (int i = 5; i >= 0; i--)
             {
                 var monthStart = new DateTime(now.Year, now.Month, 1).AddMonths(-i);
@@ -60,12 +73,18 @@ namespace TravelHub.Controllers
 
                 var totalUsersUpToMonth = userDates.Count(u => u.RegistrationDate < monthEnd);
                 var activeUsers = userDates.Count(u => u.RegistrationDate < monthEnd && u.LastOnline >= monthStart);
+                
+                var newUsersInMonth = recentUsersData.Count(u => u.RegistrationDate >= monthStart && u.RegistrationDate < monthEnd);
+                runningTotal += newUsersInMonth;
+                
+                var activeUsers = recentUsersData.Count(u => u.RegistrationDate < monthEnd && u.LastOnline >= monthStart);
+                if (i == 5) activeUsers += (int)(oldUsersCount * 0.8); // Estimate active from old users
 
                 userGrowth.Add(new UserGrowthData
                 {
                     Month = "Tháng " + monthStart.Month,
-                    Users = totalUsersUpToMonth,
-                    Active = activeUsers > 0 ? activeUsers : (int)(totalUsersUpToMonth * 0.8) // fallback if LastOnline isn't well populated
+                    Users = runningTotal,
+                    Active = activeUsers > 0 ? activeUsers : (int)(runningTotal * 0.8)
                 });
             }
 
