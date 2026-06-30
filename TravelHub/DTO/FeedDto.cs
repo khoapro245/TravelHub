@@ -15,6 +15,7 @@ namespace TravelHub.DTO
         public string? Content { get; set; }
         public int LikesCount { get; set; }
         public bool IsLikedByCurrentUser { get; set; }
+        public int CommentsCount { get; set; }
         public DateTime CreationDate { get; set; }
     }
 

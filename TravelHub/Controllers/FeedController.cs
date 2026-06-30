@@ -57,6 +57,7 @@ namespace TravelHub.Controllers
                     Content = p.Content,
                     LikesCount = p.LikesCount,
                     IsLikedByCurrentUser = userId > 0 && _context.PostLikes.Any(pl => pl.PostID == p.PostID && pl.UserID == userId),
+                    CommentsCount = p.Comments.Count,
                     CreationDate = p.CreationDate
                 })
                 .ToListAsync();
@@ -273,6 +274,35 @@ namespace TravelHub.Controllers
                 await _context.SaveChangesAsync();
 
                 return Ok(new { Message = "Comment added successfully.", CommentID = comment.CommentID });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
+        }
+
+        [HttpDelete("comments/{commentId}")]
+        public async Task<IActionResult> DeleteComment(int commentId)
+        {
+            try
+            {
+                int userId = GetCurrentUserId();
+
+                var comment = await _context.Comments
+                    .Include(c => c.Post)
+                    .FirstOrDefaultAsync(c => c.CommentID == commentId);
+
+                if (comment == null)
+                    return NotFound("Comment not found.");
+
+                // Only the author of the comment or the author of the post can delete the comment.
+                if (comment.UserID != userId && comment.Post.UserID != userId)
+                    return Forbid();
+
+                _context.Comments.Remove(comment);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Message = "Comment deleted successfully.", CommentID = commentId });
             }
             catch (UnauthorizedAccessException ex)
             {
