@@ -19,5 +19,6 @@ namespace TravelHub.Model
 
         public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
         public virtual ICollection<TravelCompanion> TravelCompanions { get; set; } = new List<TravelCompanion>();
+        public virtual ICollection<GuideApplication> GuideApplications { get; set; } = new List<GuideApplication>();
     }
 }

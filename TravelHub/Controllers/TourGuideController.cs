@@ -152,7 +152,232 @@ namespace TravelHub.Controllers
             return Ok(dto);
         }
 
+        [HttpGet("guide-requests/available")]
+        public async Task<IActionResult> GetAvailableGuideRequests()
+        {
+            // For guides to see all available requests on the feed/portal
+            var query = _context.Posts
+                .Include(p => p.User)
+                .Where(p => !p.IsHidden && p.PostType == "GuideRequest")
+                .OrderByDescending(p => p.CreationDate);
+            
+            var posts = await query.Select(p => new PostDto
+            {
+                PostID = p.PostID,
+                UserID = p.UserID,
+                Username = p.User.Username,
+                AvatarURL = p.User.AvatarURL,
+                PostType = p.PostType,
+                Title = p.Title,
+                Content = p.Content,
+                CreationDate = p.CreationDate
+            }).ToListAsync();
+
+            return Ok(posts);
+        }
+
+        [HttpPost("guide-requests/apply")]
+        public async Task<IActionResult> ApplyForGuideRequest([FromBody] ApplyGuideRequest request)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null || !int.TryParse(userIdClaim, out int guideId))
+            {
+                return Unauthorized(new { message = "Invalid user token." });
+            }
+
+            var post = await _context.Posts.FindAsync(request.PostID);
+            if (post == null || post.PostType != "GuideRequest")
+            {
+                return NotFound(new { message = "Guide request post not found." });
+            }
+
+            if (post.UserID == guideId)
+            {
+                return BadRequest(new { message = "You cannot apply for your own request." });
+            }
+
+            var existing = await _context.GuideApplications
+                .FirstOrDefaultAsync(a => a.PostID == request.PostID && a.GuideID == guideId);
+            
+            if (existing != null)
+            {
+                return BadRequest(new { message = "You have already applied for this request." });
+            }
+
+            var application = new GuideApplication
+            {
+                PostID = request.PostID,
+                GuideID = guideId,
+                Message = request.Message,
+                ProposedPriceVND = request.ProposedPriceVND,
+                Status = "Pending",
+                AppliedDate = DateTime.UtcNow
+            };
+
+            _context.GuideApplications.Add(application);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Application submitted successfully." });
+        }
+
+        [HttpGet("guide-requests/my-applications")]
+        public async Task<IActionResult> GetMyApplications()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null || !int.TryParse(userIdClaim, out int guideId))
+            {
+                return Unauthorized(new { message = "Invalid user token." });
+            }
+
+            var applications = await _context.GuideApplications
+                .Include(a => a.Post)
+                .ThenInclude(p => p.User)
+                .Where(a => a.GuideID == guideId)
+                .OrderByDescending(a => a.AppliedDate)
+                .Select(a => new 
+                {
+                    Application = new GuideApplicationDto
+                    {
+                        ApplicationID = a.ApplicationID,
+                        GuideID = a.GuideID,
+                        PostID = a.PostID,
+                        Status = a.Status,
+                        Message = a.Message,
+                        ProposedPriceVND = a.ProposedPriceVND,
+                        AppliedDate = a.AppliedDate
+                    },
+                    Post = new PostDto
+                    {
+                        PostID = a.Post.PostID,
+                        UserID = a.Post.UserID,
+                        Username = a.Post.User.Username,
+                        AvatarURL = a.Post.User.AvatarURL,
+                        PostType = a.Post.PostType,
+                        Title = a.Post.Title,
+                        Content = a.Post.Content,
+                        CreationDate = a.Post.CreationDate
+                    }
+                })
+                .ToListAsync();
+
+            return Ok(applications);
+        }
+
+        [HttpGet("guide-requests/my-posts")]
+        public async Task<IActionResult> GetMyGuideRequests()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null || !int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized(new { message = "Invalid user token." });
+            }
+
+            var posts = await _context.Posts
+                .Include(p => p.GuideApplications)
+                .ThenInclude(ga => ga.Guide)
+                .Where(p => p.UserID == userId && p.PostType == "GuideRequest" && !p.IsHidden)
+                .OrderByDescending(p => p.CreationDate)
+                .Select(p => new
+                {
+                    Post = new PostDto
+                    {
+                        PostID = p.PostID,
+                        Title = p.Title,
+                        Content = p.Content,
+                        CreationDate = p.CreationDate
+                    },
+                    Applications = p.GuideApplications.Select(ga => new GuideApplicationDto
+                    {
+                        ApplicationID = ga.ApplicationID,
+                        GuideID = ga.GuideID,
+                        GuideUsername = ga.Guide.Username,
+                        GuideAvatarURL = ga.Guide.AvatarURL,
+                        PostID = ga.PostID,
+                        Status = ga.Status,
+                        Message = ga.Message,
+                        ProposedPriceVND = ga.ProposedPriceVND,
+                        AppliedDate = ga.AppliedDate
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            return Ok(posts);
+        }
+
+        [HttpPost("guide-requests/accept-application/{applicationId}")]
+        public async Task<IActionResult> AcceptGuideApplication(int applicationId)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null || !int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized(new { message = "Invalid user token." });
+            }
+
+            var application = await _context.GuideApplications
+                .Include(a => a.Post)
+                .FirstOrDefaultAsync(a => a.ApplicationID == applicationId);
+            
+            if (application == null)
+            {
+                return NotFound(new { message = "Application not found." });
+            }
+
+            if (application.Post.UserID != userId)
+            {
+                return Forbid();
+            }
+
+            // Accept this one, decline others
+            var allApplications = await _context.GuideApplications
+                .Where(a => a.PostID == application.PostID)
+                .ToListAsync();
+
+            foreach(var app in allApplications)
+            {
+                if (app.ApplicationID == applicationId)
+                {
+                    app.Status = "Accepted";
+                }
+                else
+                {
+                    app.Status = "Declined";
+                }
+            }
+
+            // Create a chat group with the guide
+            string groupName = $"Chuyến đi: {application.Post.Title}";
+            var existingGroup = await _context.Chats
+                .Include(c => c.ChatParticipants)
+                .FirstOrDefaultAsync(c => c.IsGroupChat && c.ChatName == groupName && c.ChatParticipants.Any(cp => cp.UserID == userId));
+
+            if (existingGroup == null)
+            {
+                existingGroup = new Chat
+                {
+                    ChatName = groupName,
+                    IsGroupChat = true
+                };
+                _context.Chats.Add(existingGroup);
+                await _context.SaveChangesAsync();
+
+                _context.ChatParticipants.Add(new ChatParticipant { ChatID = existingGroup.ChatID, UserID = userId });
+                _context.ChatParticipants.Add(new ChatParticipant { ChatID = existingGroup.ChatID, UserID = application.GuideID });
+            }
+            else
+            {
+                if (!existingGroup.ChatParticipants.Any(cp => cp.UserID == application.GuideID))
+                {
+                    _context.ChatParticipants.Add(new ChatParticipant { ChatID = existingGroup.ChatID, UserID = application.GuideID });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Guide accepted and chat room created." });
+        }
+
         // Parse chuỗi ngày (yyyy-MM-dd) từ form thành DateTime?, trả null nếu rỗng/không hợp lệ
+
         private static DateTime? ParseDate(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
