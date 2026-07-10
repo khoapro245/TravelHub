@@ -99,7 +99,7 @@ namespace TravelHub.Controllers
         [HttpPost("recommend")]
         public async Task<IActionResult> RecommendDestinations([FromBody] AiRecommendRequest request)
         {
-            request.PageSize = 4;
+            request.PageSize = 2;
 
             var limitCheck = await CheckDailyLimitAsync();
             if (!limitCheck.allowed)
