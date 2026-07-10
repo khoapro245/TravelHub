@@ -157,5 +157,98 @@ namespace TravelHub.Data
                 Console.WriteLine($"[DataSeeder] Seeded UserCode for {usersWithoutCode.Count} users.");
             }
         }
+
+        public static async Task SeedRealisticUsersAsync(AppDbContext context)
+        {
+            int totalUsers = await context.Users.CountAsync();
+            if (totalUsers >= 250) return;
+
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword("12345678Khoa*");
+            var usersToAdd = new List<User>();
+            var random = new Random();
+
+            string[] lastNames = { "Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Phan", "Vũ", "Võ", "Đặng", "Bùi", "Đỗ", "Hồ", "Ngô", "Dương", "Lý" };
+            string[] middleNames = { "Văn", "Thị", "Hữu", "Ngọc", "Minh", "Thanh", "Đức", "Hoàng", "Xuân", "Thu", "Hải", "Tuấn", "Quang", "Trọng", "Gia", "Bảo", "Đăng", "Mai", "Như" };
+            string[] firstNames = { "Anh", "Bình", "Châu", "Dũng", "Dương", "Đạt", "Hà", "Hải", "Hòa", "Hùng", "Hương", "Khánh", "Kiên", "Lâm", "Lan", "Linh", "Long", "Mai", "Nam", "Nga", "Ngọc", "Phong", "Phúc", "Phương", "Quân", "Quang", "Sơn", "Tài", "Tâm", "Thảo", "Thắng", "Thành", "Thu", "Thủy", "Tiến", "Trang", "Trung", "Tuấn", "Tùng", "Vinh", "Yến", "My", "Nhi", "Huy", "Khang", "Vy" };
+
+            var existingUsernames = new HashSet<string>(await context.Users.Select(u => u.Username).ToListAsync());
+            var existingEmails = new HashSet<string>(await context.Users.Select(u => u.Email).ToListAsync());
+            var existingCodes = new HashSet<string>(await context.Users.Where(u => !string.IsNullOrEmpty(u.UserCode)).Select(u => u.UserCode!).ToListAsync());
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+            string RemoveDiacritics(string text) 
+            {
+                var normalizedString = text.Normalize(System.Text.NormalizationForm.FormD);
+                var stringBuilder = new System.Text.StringBuilder();
+
+                foreach (var c in normalizedString)
+                {
+                    var unicodeCategory = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+                    if (unicodeCategory != System.Globalization.UnicodeCategory.NonSpacingMark)
+                    {
+                        stringBuilder.Append(c);
+                    }
+                }
+                return stringBuilder.ToString().Normalize(System.Text.NormalizationForm.FormC).Replace("Đ", "D").Replace("đ", "d");
+            }
+
+            int needed = 250 - totalUsers;
+            for (int i = 0; i < needed; i++)
+            {
+                string lastName = lastNames[random.Next(lastNames.Length)];
+                string middleName = middleNames[random.Next(middleNames.Length)];
+                string firstName = firstNames[random.Next(firstNames.Length)];
+
+                string fullName = $"{lastName} {middleName} {firstName}";
+                
+                string baseUsername = RemoveDiacritics($"{firstName}{lastName}{random.Next(100, 999)}").ToLower().Replace(" ", "");
+                string username = baseUsername;
+                int counter = 1;
+                while (existingUsernames.Contains(username))
+                {
+                    username = $"{baseUsername}{counter++}";
+                }
+                existingUsernames.Add(username);
+
+                string email = $"{username}@dummy.travelhub.com";
+                while (existingEmails.Contains(email))
+                {
+                    email = $"{username}{counter++}@dummy.travelhub.com";
+                }
+                existingEmails.Add(email);
+
+                string userCode;
+                do
+                {
+                    var result = new char[6];
+                    for (int c = 0; c < 6; c++)
+                    {
+                        result[c] = chars[random.Next(chars.Length)];
+                    }
+                    userCode = new string(result);
+                } while (existingCodes.Contains(userCode));
+                existingCodes.Add(userCode);
+
+                usersToAdd.Add(new User
+                {
+                    Username = username,
+                    Email = email,
+                    FullName = fullName,
+                    Role = "Customer",
+                    PasswordHash = passwordHash,
+                    RegistrationDate = DateTime.UtcNow.AddDays(-random.Next(1, 365)), // Random thời gian đăng ký trong 1 năm qua
+                    UserCode = userCode,
+                    AvatarURL = $"https://ui-avatars.com/api/?name={Uri.EscapeDataString(firstName)}&background=random",
+                    TravelPoints = random.Next(10, 1000)
+                });
+            }
+
+            if (usersToAdd.Any())
+            {
+                context.Users.AddRange(usersToAdd);
+                await context.SaveChangesAsync();
+                Console.WriteLine($"[DataSeeder] Seeded {usersToAdd.Count} realistic dummy users.");
+            }
+        }
     }
 }

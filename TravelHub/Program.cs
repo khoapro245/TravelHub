@@ -143,6 +143,9 @@ using (var scope = app.Services.CreateScope())
 
         // Seed UserCodes for existing users
         await TravelHub.Data.DataSeeder.SeedUserCodesAsync(dbContext);
+
+        // Seed dummy users up to 250
+        await TravelHub.Data.DataSeeder.SeedRealisticUsersAsync(dbContext);
     }
     catch (Exception ex)
     {
