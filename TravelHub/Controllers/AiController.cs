@@ -435,6 +435,14 @@ Return the response exactly as a JSON array matching this structure, without any
                                 newDest.Image = randomImage;
                                 rec.ImageUrl = randomImage;
                             }
+                            else
+                            {
+                                // Sử dụng AI tạo ảnh động 1920x1080 dựa trên tên địa điểm nếu chưa có ảnh cũ
+                                string promptImage = $"beautiful travel photography, landscape scenery of {rec.Name} {rec.CityProvince}, high quality, 8k resolution, photorealistic";
+                                string generatedImageUrl = $"https://image.pollinations.ai/prompt/{Uri.EscapeDataString(promptImage)}?width=1920&height=1080&nologo=true";
+                                newDest.Image = generatedImageUrl;
+                                rec.ImageUrl = generatedImageUrl;
+                            }
 
                             _context.Destinations.Add(newDest);
                             await _context.SaveChangesAsync();
