@@ -161,7 +161,7 @@ namespace TravelHub.Data
         public static async Task SeedRealisticUsersAsync(AppDbContext context)
         {
             int totalUsers = await context.Users.CountAsync();
-            if (totalUsers >= 250) return;
+            if (totalUsers >= 523) return;
 
             var passwordHash = BCrypt.Net.BCrypt.HashPassword("12345678Khoa*");
             var usersToAdd = new List<User>();
@@ -192,7 +192,7 @@ namespace TravelHub.Data
                 return stringBuilder.ToString().Normalize(System.Text.NormalizationForm.FormC).Replace("Đ", "D").Replace("đ", "d");
             }
 
-            int needed = 250 - totalUsers;
+            int needed = 523 - totalUsers;
             for (int i = 0; i < needed; i++)
             {
                 string lastName = lastNames[random.Next(lastNames.Length)];
